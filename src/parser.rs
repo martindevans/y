@@ -1,0 +1,247 @@
+use super::ast::{ Program, Import, EnumDefinition, StructDefinition, CallableDefinition, CallType, MainDefinition, FieldDefinition, EnumItemDefinition, RangeDefinition, ParameterDefinition, Statement, Attribute, Expression, Constant };
+
+// C parser grammar: https://github.com/vickenty/lang-c/blob/master/grammar.rustpeg
+
+#[derive(Debug)]
+enum Type {
+    Enum(EnumDefinition),
+    Struct(StructDefinition),
+    Range(RangeDefinition)
+}
+
+fn split_types(types : Vec<Type>) -> (Vec<EnumDefinition>, Vec<StructDefinition>, Vec<RangeDefinition>) {
+    let mut enums = Vec::new();
+    let mut structs = Vec::new();
+    let mut ranges = Vec::new();
+
+    for t in types.into_iter() {
+        match t {
+            Type::Enum(x) => enums.push(x),
+            Type::Struct(x) => structs.push(x),
+            Type::Range(x) => ranges.push(x)
+        }
+    }
+
+    return (enums, structs, ranges);
+}
+
+peg::parser!{
+
+    pub grammar y_parser() for str {
+
+        pub rule program() -> Program
+            = __ i:import()* __ t:typedef()* __ con:constant()* __ c:callable()* __ m:main()?
+            {
+                let (enums, structs, ranges) = split_types(t);
+
+                Program {
+                    imports: i,
+                    constants: con,
+                    enums: enums,
+                    structs: structs,
+                    ranges: ranges,
+                    callables: c,
+                    main: m
+                }
+            }
+
+        rule import() -> Import
+            = "import" __ "\"" p:path() "\"" __ n:("in" __ n:identifier() { n })? __ ";" __
+            { Import { path: p, namespace: n } }
+            / expected!("Import Definition")
+
+
+        rule typedef() -> Type
+            = "type" __ t:(
+                e:enumdef() { Type::Enum(e) }
+                / s:structdef() { Type::Struct(s)}
+                / r:rangedef() { Type::Range(r) }
+            ) __
+            { t }
+
+        rule constant() -> Constant
+            = "const" __ f:field() __ "=" __ e:expression() __ ";" __
+            { Constant {
+                field: f,
+                value: e
+            } }
+
+        rule enumdef() -> EnumDefinition
+            = "enum" __ "<" __ b:identifier() __ ">" __ n:identifier() __ "{" __ e:(enum_item() ** ("," __)) __ "}"
+            { EnumDefinition { name: n, base: b, items: e } }
+
+        rule enum_item() -> EnumItemDefinition
+            = i:identifier() __ "(" __ "todo_enum_value" __ ")"
+            { EnumItemDefinition { name: i } }
+
+        rule rangedef() -> RangeDefinition
+            = "range" __ "<" __ b:identifier() __ ">" __ n:identifier() __ "=>" __ "todo_range_expression" __ ";"
+            { RangeDefinition { name: n, base: b } }
+
+        rule structdef() -> StructDefinition
+            = "struct" __ i:identifier() __ "{" __ f:(field() ** ("," __)) __ "}"
+            { StructDefinition { name: i, fields: f } }
+
+
+
+        rule callable() -> CallableDefinition
+            = at:attributes() __ "def" __ c:call_type() __ n:identifier() __ a:arglist() __ r:("->" __ i:identifier() { i })? __ "{" __ s:statement_list() __ "}" __
+            { CallableDefinition {
+                call_type: c,
+                name: n,
+                parameters: a,
+                return_type: r,
+                statements: s,
+                attributes: at
+            } }
+
+        rule arglist() -> Vec<ParameterDefinition>
+            = "(" __ a:(arg() ** ("," __)) __ ")"
+            { a }
+        
+        rule arg() -> ParameterDefinition
+            = c:"copy "? f:field()
+            { ParameterDefinition {
+                field: f,
+                copy: c.is_some()
+            }}
+
+        rule call_type() -> CallType
+            = "proc" { CallType::Proc }
+            / "macro" { CallType::Macro }
+            / expected!("Expected call type specifier")
+
+        rule main() -> MainDefinition
+            = "main" __ "{" __ s:statement_list() __ "}"
+            { MainDefinition {
+                statements: s
+            }}
+
+
+
+        rule statement_list() -> Vec<Statement>
+            = s:(statement() ** (";" __)) ";"
+            { s }
+            / __
+            { Vec::<Statement>::new() }
+
+        rule statement() -> Statement
+            = "todo_stmt"
+            { Statement::Todo { } }
+            / "if" __ "(" __ c:expression() __ ")" __ "{" __ t:statement_list() __ "}" f:(__ "else" __ "{" __ f:statement_list() __ "}" { f })?
+            { Statement::If(c, t, f.unwrap_or(Vec::new())) }
+            / i:identifier() __ "(" __ a:(expression() ** ("," __)) __ ")"
+            { Statement::Call(i, a) }
+            / i:identifier() __ "=" __ e:expression()
+            { Statement::Assign(i, e) }
+            / ":" i:identifier() __ "=" __ e:expression()
+            { Statement::ExternalAssign(i, e) }
+
+        rule attributes() -> Vec<Attribute>
+            = "[" __ a:(attribute() ** ("," __)) "]"
+            { a } 
+
+        rule attribute() -> Attribute
+            = n:identifier() __ "(" __ a:(expression() ** ("," __)) __ ")"
+            { Attribute { name: n, parameters: a } }
+
+
+        rule expression() -> Expression
+            = precedence!{
+                x:(@) __ "==" __ y:@ { Expression::Equals(Box::new(x), Box::new(y)) }
+                x:(@) __ "!=" __ y:@ { Expression::NotEquals(Box::new(x), Box::new(y)) }
+                --
+                x:(@) __ "+" __ y:@ { Expression::Add(Box::new(x), Box::new(y)) }
+                x:(@) __ "-" __ y:@ { Expression::Subtract(Box::new(x), Box::new(y)) }
+                --
+                x:(@) __ "*" __ y:@ { Expression::Multiply(Box::new(x), Box::new(y)) }
+                x:(@) __ "/" __ y:@ { Expression::Divide(Box::new(x), Box::new(y)) }
+                --
+                x:@ __ "^" __ y:(@) { Expression::Exponent(Box::new(x), Box::new(y)) }
+                --
+                "-" x:@ { Expression::Negate(Box::new(x)) }
+                "!" x:@ { Expression::Not(Box::new(x)) }
+                --
+                n:number() { Expression::ConstNumber(n) }
+                s:string() { Expression::ConstString(s) }
+                i:identifier() { Expression::FieldAccess(i) }
+                ":" i:identifier() { Expression::ExternalFieldAccess(i) }
+                "(" __ e:expression() __ ")" { Expression::Bracket(Box::new(e)) }
+            }
+
+
+        rule identifier() -> String
+            = i:$(['A'..='Z' | 'a'..='z' | '_']['A'..='Z' | 'a'..='z' | '0'..='9' | '_']*)
+            { i.to_string() }
+            / expected!("Identifier")
+
+        rule path() -> String
+            = p:$(['a'..='z' | 'A'..='Z' | '0'..='9' | '\\' | '/' | ':' | '.' | '_' | ' ']+)
+            { p.to_string().replace("\\", "/") }
+            / expected!("Path")
+
+
+
+        rule field() -> FieldDefinition
+            = n:identifier() __ ":" __ t:identifier()
+            { FieldDefinition { name: n, typename: t } }
+
+        rule string() -> String
+            = "\"" s:$((!"\"" [_])*) "\""
+            { s.to_string() }
+
+        rule number() -> String
+            = p:$("-"? ['0'..='9']+ ("." ['0'..='9']+)?)
+            { p.to_string() }
+
+
+
+        rule newline()
+            = "\r"? "\n"
+
+        rule comment()
+            = "//" (!newline() [_])* newline()
+            / "/*" (!"*/" [_])* "*/"
+
+        rule whitespace()
+            = " "
+            / "\t"
+            / newline()
+
+        rule __()
+            = quiet!{ (comment() / whitespace())* }
+        
+
+
+        rule uint() -> u64
+            = n:$(['0'..='9']+) { n.parse().unwrap() }
+        
+        pub rule list() -> Vec<u64>
+            = "[" l:uint() ** "," "]" { l }
+    }
+
+}
+
+#[cfg(test)]
+mod tests {
+
+    use std::fs;
+
+    use super::*;
+
+    #[test]
+    fn parse_file() {
+        let all = fs::read_to_string("tests/all.y").unwrap();
+
+        for l in all.lines() {
+            println!("{:?}", l);
+        }
+
+        let prog = y_parser::program(&all).unwrap();
+
+        assert_eq!(3, prog.imports.len());
+        assert_eq!("file.y", prog.imports[0].path);
+        assert_eq!("x/y/z.y", prog.imports[1].path);
+        assert_eq!("lib/number_parser.y", prog.imports[2].path);
+    }
+}

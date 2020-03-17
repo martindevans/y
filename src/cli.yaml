@@ -1,0 +1,27 @@
+name: yc
+version: "1.0"
+author: Martin Evans <martindevans@gmail.com>
+about: Compiles `Y` into `Yolol`
+
+args:
+  - annotate:
+      short: a
+      long: annotate
+      help: Emit type annotations for the emitted Yolol code
+      takes_value: false
+
+  - input:
+      help: Sets the input file to use
+      required: true
+      index: 1
+
+  - output:
+      help: Sets the output file to write the compiled result to
+      required: true
+      index: 2
+
+  - devices:
+      short: d
+      long: devices
+      help: Input a file which specifies the network layout
+      takes_value: true

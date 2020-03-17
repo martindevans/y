@@ -1,0 +1,12 @@
+[package]
+name = "yc"
+version = "0.1.0"
+authors = ["Martin Evans <martindevans@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+peg = "0.6.2"
+peg-runtime = "0.6.2"
+colored = "1.9.3"
+rayon = "1.1"
+clap = {version = "2.33.0", features = ["yaml"]}
