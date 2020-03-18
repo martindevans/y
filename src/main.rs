@@ -19,6 +19,12 @@ enum CompilerError {
 }
 
 fn main() {
+
+    // Try to configure the terminal to accept colours, disable colourisation if it fails
+    if let Err(_) = colored::control::set_virtual_terminal(true) {
+        colored::control::set_override(false);
+    }
+
     let yaml = load_yaml!("cli.yaml");
     let matches = App::from_yaml(yaml).get_matches();
 
