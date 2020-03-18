@@ -88,6 +88,7 @@ pub struct StructDefinition {
 pub struct RangeDefinition {
     pub name: String,
     pub base: String,
+    pub expression: Expression,
 }
 
 #[derive(Debug)]
@@ -131,29 +132,53 @@ pub struct Attribute {
 
 #[derive(Debug)]
 pub enum Statement {
-    Todo,
+    CompilePanic(String),
+
+    Emit(String),
+
     Call(String, Vec<Expression>),
     If(Expression, Vec<Statement>, Vec<Statement>),
+
     Assign(String, Expression),
+    DeclareAssign(FieldDefinition, Expression),
+    DeclareConst(FieldDefinition, Expression),
     ExternalAssign(String, Expression),
+
+    Return(Expression)
 }
 
 #[derive(Debug)]
 pub enum Expression {
+    CompilePanic(String),
+
     ConstNumber(String),
     ConstString(String),
     FieldAccess(String),
     ExternalFieldAccess(String),
     Negate(Box<Expression>),
     Not(Box<Expression>),
+    Call(String, Vec<Expression>),
 
+    Is(Box<Expression>, String),
     Add(Box<Expression>, Box<Expression>),
     Subtract(Box<Expression>, Box<Expression>),
     Multiply(Box<Expression>, Box<Expression>),
     Divide(Box<Expression>, Box<Expression>),
+    Modulus(Box<Expression>, Box<Expression>),
     Exponent(Box<Expression>, Box<Expression>),
+    And(Box<Expression>, Box<Expression>),
+    Or(Box<Expression>, Box<Expression>),
+    GreaterThan(Box<Expression>, Box<Expression>),
+    LessThan(Box<Expression>, Box<Expression>),
+    GreaterThanOrEq(Box<Expression>, Box<Expression>),
+    LessThanOrEq(Box<Expression>, Box<Expression>),
     Bracket(Box<Expression>),
 
     Equals(Box<Expression>, Box<Expression>),
     NotEquals(Box<Expression>, Box<Expression>),
+
+    PostIncrement(String),
+    PostDecrement(String),
+    PreIncrement(String),
+    PreDecrement(String),
 }

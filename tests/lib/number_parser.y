@@ -1,16 +1,22 @@
-import "testing/yunit.y";
+import "yunit.y";
+import "numbers.y";
 
 def macro parse_base10_char(input: string, output: number, counter: number) {
-    /* const i = "12345";
+    var c:string = input - --input;
+    var d:number = 3 * ((c > 1) + (c > 4) + (c > 7));
+    output += (d + (c > d) - (c < d)) * 10 ^ counter++;
+}
 
-    let c = input - --input;
-    let d = 3 * ((c > 1) + (c > 4) + (c > 7));
-    output += (d + (c > d) - (c < d)) * 10^j++; */
-    todo_body
+def macro parse_base16_char(input: string, output: number, counter: number) {
+    const x:string = "FDB97531";
+    const y:string = "FEBA7632";
+
+    var c:string = input - --input;
+    output += (4 * ((c > 3) + (c > 7) + (c > "B")) + (x > x - c) + 2 * (y > y - c)) * 16 ^ counter++;
 }
 
 main {
-    todo_body
+    panic("contents of `main` block remain unimplemented");
     /* line(init) {
         o = 0;
         i = "8237897"

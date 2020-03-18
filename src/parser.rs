@@ -75,8 +75,8 @@ peg::parser!{
             { EnumItemDefinition { name: i } }
 
         rule rangedef() -> RangeDefinition
-            = "range" __ "<" __ b:identifier() __ ">" __ n:identifier() __ "=>" __ "todo_range_expression" __ ";"
-            { RangeDefinition { name: n, base: b } }
+            = "range" __ "<" __ b:identifier() __ ">" __ n:identifier() __ "->" __  e:expression() __ ";"
+            { RangeDefinition { name: n, base: b, expression: e } }
 
         rule structdef() -> StructDefinition
             = "struct" __ i:identifier() __ "{" __ f:(field() ** ("," __)) __ "}"
@@ -85,14 +85,14 @@ peg::parser!{
 
 
         rule callable() -> CallableDefinition
-            = at:attributes() __ "def" __ c:call_type() __ n:identifier() __ a:arglist() __ r:("->" __ i:identifier() { i })? __ "{" __ s:statement_list() __ "}" __
+            = at:attributes()? __ "def" __ c:call_type() __ n:identifier() __ a:arglist() __ r:("->" __ i:identifier() { i })? __ "{" __ s:statement_list() __ "}" __
             { CallableDefinition {
                 call_type: c,
                 name: n,
                 parameters: a,
                 return_type: r,
                 statements: s,
-                attributes: at
+                attributes: at.unwrap_or(Vec::new())
             } }
 
         rule arglist() -> Vec<ParameterDefinition>
@@ -126,16 +126,26 @@ peg::parser!{
             { Vec::<Statement>::new() }
 
         rule statement() -> Statement
-            = "todo_stmt"
-            { Statement::Todo { } }
+            = "panic" __ "(" __ m:string() __ ")"
+            { Statement::CompilePanic(m) }
             / "if" __ "(" __ c:expression() __ ")" __ "{" __ t:statement_list() __ "}" f:(__ "else" __ "{" __ f:statement_list() __ "}" { f })?
             { Statement::If(c, t, f.unwrap_or(Vec::new())) }
+            / "return" __ e:expression()
+            { Statement::Return(e) }
+            / "emit" __ "{" __ s:string() __ "}"
+            { Statement::Emit(s) }
             / i:identifier() __ "(" __ a:(expression() ** ("," __)) __ ")"
             { Statement::Call(i, a) }
+            / "var" __ f:field() __ "=" __ e:expression()
+            { Statement::DeclareAssign(f, e) }
+            / "const" __ f:field() __ "=" __ e:expression()
+            { Statement::DeclareConst(f, e) }
             / i:identifier() __ "=" __ e:expression()
             { Statement::Assign(i, e) }
             / ":" i:identifier() __ "=" __ e:expression()
             { Statement::ExternalAssign(i, e) }
+            / i:identifier() __ "+=" __ e:expression()
+            { Statement::Assign(i.clone(), Expression::Add(Box::new(Expression::FieldAccess(i)), Box::new(e)))}
 
         rule attributes() -> Vec<Attribute>
             = "[" __ a:(attribute() ** ("," __)) "]"
@@ -148,25 +158,45 @@ peg::parser!{
 
         rule expression() -> Expression
             = precedence!{
+                "panic" __ "(" __ m:string() __ ")" { Expression::CompilePanic(m) }
+                --
+                x:(@) __ "&" "&"? __ y:@ { Expression::And(Box::new(x), Box::new(y)) }
+                --
+                x:(@) __ "|" "|"? __ y:@ { Expression::Or(Box::new(x), Box::new(y)) }
+                --
+                x:(@) __ "is" __ y:identifier() { Expression::Is(Box::new(x), y) }
+                --
                 x:(@) __ "==" __ y:@ { Expression::Equals(Box::new(x), Box::new(y)) }
                 x:(@) __ "!=" __ y:@ { Expression::NotEquals(Box::new(x), Box::new(y)) }
+                --
+                x:(@) __ ">" __ y:@ { Expression::GreaterThan(Box::new(x), Box::new(y)) }
+                x:(@) __ "<" __ y:@ { Expression::LessThan(Box::new(x), Box::new(y)) }
+                x:(@) __ ">=" __ y:@ { Expression::GreaterThanOrEq(Box::new(x), Box::new(y)) }
+                x:(@) __ "<=" __ y:@ { Expression::LessThanOrEq(Box::new(x), Box::new(y)) }
                 --
                 x:(@) __ "+" __ y:@ { Expression::Add(Box::new(x), Box::new(y)) }
                 x:(@) __ "-" __ y:@ { Expression::Subtract(Box::new(x), Box::new(y)) }
                 --
                 x:(@) __ "*" __ y:@ { Expression::Multiply(Box::new(x), Box::new(y)) }
                 x:(@) __ "/" __ y:@ { Expression::Divide(Box::new(x), Box::new(y)) }
+                x:(@) __ "%" __ y:@ { Expression::Modulus(Box::new(x), Box::new(y)) }
                 --
-                x:@ __ "^" __ y:(@) { Expression::Exponent(Box::new(x), Box::new(y)) }
+                x:(@) __ "^" __ y:@ { Expression::Exponent(Box::new(x), Box::new(y)) }
                 --
-                "-" x:@ { Expression::Negate(Box::new(x)) }
-                "!" x:@ { Expression::Not(Box::new(x)) }
+                "-" x:expression() { Expression::Negate(Box::new(x)) }
+                "!" x:expression() { Expression::Not(Box::new(x)) }
+                --
+                i:identifier() __ "++" { Expression::PostIncrement(i) }
+                i:identifier() __ "--" { Expression::PostDecrement(i) }
+                "++" __ i:identifier() { Expression::PreIncrement(i) }
+                "--" __ i:identifier() { Expression::PreDecrement(i) }
                 --
                 n:number() { Expression::ConstNumber(n) }
                 s:string() { Expression::ConstString(s) }
-                i:identifier() { Expression::FieldAccess(i) }
                 ":" i:identifier() { Expression::ExternalFieldAccess(i) }
                 "(" __ e:expression() __ ")" { Expression::Bracket(Box::new(e)) }
+                n:identifier() __ "(" __ e:(e:expression() ** ("," __) { e }) __ ")" { Expression::Call(n, e) }
+                i:identifier() { Expression::FieldAccess(i) }
             }
 
 
