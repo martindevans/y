@@ -79,7 +79,7 @@ peg::parser!{
             { RangeDefinition { name: n, base: b, expression: e } }
 
         rule structdef() -> StructDefinition
-            = "struct" __ i:identifier() __ "{" __ f:(field() ** ("," __)) __ "}"
+            = "struct" __ i:identifier() __ "{" __ f:(field() ** ("," __)) __ ","? __ "}"
             { StructDefinition { name: i, fields: f } }
 
 
@@ -140,12 +140,20 @@ peg::parser!{
             { Statement::DeclareAssign(f, e) }
             / "const" __ f:field() __ "=" __ e:expression()
             { Statement::DeclareConst(f, e) }
-            / i:identifier() __ "=" __ e:expression()
+            / i:field_access() __ "=" __ e:expression()
             { Statement::Assign(i, e) }
             / ":" i:identifier() __ "=" __ e:expression()
             { Statement::ExternalAssign(i, e) }
-            / i:identifier() __ "+=" __ e:expression()
+            / i:field_access() __ "+=" __ e:expression()
             { Statement::Assign(i.clone(), Expression::Add(Box::new(Expression::FieldAccess(i)), Box::new(e)))}
+
+        rule field_access() -> Vec<String> =
+            s:identifier() f:("." f:(f:identifier() ** "." { f }) { f })?
+            {
+                let mut v = f.unwrap_or(Vec::new());
+                v.insert(0, s);
+                v
+            }
 
         rule attributes() -> Vec<Attribute>
             = "[" __ a:(attribute() ** ("," __)) "]"
@@ -196,7 +204,7 @@ peg::parser!{
                 ":" i:identifier() { Expression::ExternalFieldAccess(i) }
                 "(" __ e:expression() __ ")" { Expression::Bracket(Box::new(e)) }
                 n:identifier() __ "(" __ e:(e:expression() ** ("," __) { e }) __ ")" { Expression::Call(n, e) }
-                i:identifier() { Expression::FieldAccess(i) }
+                i:field_access() { Expression::FieldAccess(i) }
             }
 
 

@@ -1,941 +1,256 @@
 Program {
     imports: [],
-    constants: [
-        Constant {
-            field: FieldDefinition {
-                name: "true",
-                typename: "number",
-            },
-            value: ConstNumber(
-                "1",
-            ),
-        },
-        Constant {
-            field: FieldDefinition {
-                name: "false",
-                typename: "number",
-            },
-            value: ConstNumber(
-                "0",
-            ),
-        },
-        Constant {
-            field: FieldDefinition {
-                name: "pi",
-                typename: "number",
-            },
-            value: ConstNumber(
-                "3.141",
-            ),
-        },
-        Constant {
-            field: FieldDefinition {
-                name: "tau",
-                typename: "number",
-            },
-            value: ConstNumber(
-                "6.282",
-            ),
-        },
-        Constant {
-            field: FieldDefinition {
-                name: "e",
-                typename: "number",
-            },
-            value: ConstNumber(
-                "2.718",
-            ),
-        },
-        Constant {
-            field: FieldDefinition {
-                name: "max_num",
-                typename: "number",
-            },
-            value: ConstNumber(
-                "9223372036854775.807",
-            ),
-        },
-        Constant {
-            field: FieldDefinition {
-                name: "min_num",
-                typename: "number",
-            },
-            value: Negate(
-                ConstNumber(
-                    "9223372036854775.808",
-                ),
-            ),
-        },
-    ],
+    constants: [],
     enums: [],
-    structs: [],
-    ranges: [
-        RangeDefinition {
-            name: "positive",
-            base: "number",
-            expression: GreaterThan(
-                FieldAccess(
-                    "positive",
-                ),
-                ConstNumber(
-                    "0",
-                ),
-            ),
+    structs: [
+        StructDefinition {
+            name: "pid_constants",
+            fields: [
+                FieldDefinition {
+                    name: "p",
+                    typename: "number",
+                },
+                FieldDefinition {
+                    name: "i",
+                    typename: "number",
+                },
+                FieldDefinition {
+                    name: "d",
+                    typename: "number",
+                },
+                FieldDefinition {
+                    name: "r",
+                    typename: "number",
+                },
+            ],
         },
-        RangeDefinition {
-            name: "positive_or_zero",
-            base: "number",
-            expression: GreaterThanOrEq(
-                FieldAccess(
-                    "positive",
-                ),
-                ConstNumber(
-                    "0",
-                ),
-            ),
+        StructDefinition {
+            name: "pid_state",
+            fields: [
+                FieldDefinition {
+                    name: "previous_error",
+                    typename: "number",
+                },
+                FieldDefinition {
+                    name: "previous_derivative",
+                    typename: "number",
+                },
+                FieldDefinition {
+                    name: "integrated_error",
+                    typename: "number",
+                },
+            ],
         },
-        RangeDefinition {
-            name: "negative",
-            base: "number",
-            expression: LessThan(
-                FieldAccess(
-                    "negative",
-                ),
-                ConstNumber(
-                    "0",
-                ),
-            ),
-        },
-        RangeDefinition {
-            name: "negative_or_zero",
-            base: "number",
-            expression: LessThanOrEq(
-                FieldAccess(
-                    "negative",
-                ),
-                ConstNumber(
-                    "0",
-                ),
-            ),
-        },
-        RangeDefinition {
-            name: "integer",
-            base: "number",
-            expression: Equals(
-                Multiply(
-                    Divide(
-                        FieldAccess(
-                            "integer",
-                        ),
-                        ConstNumber(
-                            "1000",
-                        ),
-                    ),
-                    ConstNumber(
-                        "1000",
-                    ),
-                ),
-                FieldAccess(
-                    "integer",
-                ),
-            ),
-        },
-        RangeDefinition {
-            name: "natural",
-            base: "integer",
-            expression: GreaterThan(
-                FieldAccess(
-                    "natural",
-                ),
-                ConstNumber(
-                    "0",
-                ),
-            ),
-        },
-        RangeDefinition {
-            name: "square",
-            base: "number",
-            expression: Is(
-                Call(
-                    "sqrt",
-                    [
-                        FieldAccess(
-                            "square",
-                        ),
-                    ],
-                ),
-                "integer",
-            ),
+        StructDefinition {
+            name: "pid",
+            fields: [
+                FieldDefinition {
+                    name: "constants",
+                    typename: "pid_constants",
+                },
+                FieldDefinition {
+                    name: "state",
+                    typename: "pid_state",
+                },
+            ],
         },
     ],
+    ranges: [],
     callables: [
         CallableDefinition {
-            name: "parse_base10_char",
+            name: "pid_update",
             call_type: Macro,
             parameters: [
                 ParameterDefinition {
                     field: FieldDefinition {
-                        name: "input",
-                        typename: "string",
+                        name: "pid",
+                        typename: "pid",
                     },
                     copy: false,
                 },
                 ParameterDefinition {
                     field: FieldDefinition {
-                        name: "output",
+                        name: "target",
                         typename: "number",
                     },
                     copy: false,
                 },
                 ParameterDefinition {
                     field: FieldDefinition {
-                        name: "counter",
+                        name: "measurement",
                         typename: "number",
                     },
                     copy: false,
                 },
             ],
-            return_type: None,
+            return_type: Some(
+                "number",
+            ),
             statements: [
                 DeclareAssign(
                     FieldDefinition {
-                        name: "c",
-                        typename: "string",
+                        name: "error",
+                        typename: "number",
                     },
                     Subtract(
                         FieldAccess(
-                            "input",
+                            [
+                                "target",
+                            ],
                         ),
-                        Negate(
-                            Negate(
-                                FieldAccess(
-                                    "input",
-                                ),
-                            ),
-                        ),
-                    ),
-                ),
-                DeclareAssign(
-                    FieldDefinition {
-                        name: "d",
-                        typename: "number",
-                    },
-                    Multiply(
-                        ConstNumber(
-                            "3",
-                        ),
-                        Bracket(
-                            Add(
-                                Add(
-                                    Bracket(
-                                        GreaterThan(
-                                            FieldAccess(
-                                                "c",
-                                            ),
-                                            ConstNumber(
-                                                "1",
-                                            ),
-                                        ),
-                                    ),
-                                    Bracket(
-                                        GreaterThan(
-                                            FieldAccess(
-                                                "c",
-                                            ),
-                                            ConstNumber(
-                                                "4",
-                                            ),
-                                        ),
-                                    ),
-                                ),
-                                Bracket(
-                                    GreaterThan(
-                                        FieldAccess(
-                                            "c",
-                                        ),
-                                        ConstNumber(
-                                            "7",
-                                        ),
-                                    ),
-                                ),
-                            ),
+                        FieldAccess(
+                            [
+                                "measurement",
+                            ],
                         ),
                     ),
                 ),
                 Assign(
-                    "output",
+                    [
+                        "pid",
+                        "integrated_error",
+                    ],
                     Add(
                         FieldAccess(
-                            "output",
+                            [
+                                "pid",
+                                "integrated_error",
+                            ],
                         ),
+                        FieldAccess(
+                            [
+                                "error",
+                            ],
+                        ),
+                    ),
+                ),
+                DeclareAssign(
+                    FieldDefinition {
+                        name: "dedt",
+                        typename: "number",
+                    },
+                    Add(
                         Multiply(
                             Bracket(
                                 Subtract(
-                                    Add(
-                                        FieldAccess(
-                                            "d",
-                                        ),
-                                        Bracket(
-                                            GreaterThan(
-                                                FieldAccess(
-                                                    "c",
-                                                ),
-                                                FieldAccess(
-                                                    "d",
-                                                ),
-                                            ),
-                                        ),
+                                    FieldAccess(
+                                        [
+                                            "pid",
+                                            "state",
+                                            "previous_error",
+                                        ],
                                     ),
-                                    Bracket(
-                                        LessThan(
-                                            FieldAccess(
-                                                "c",
-                                            ),
-                                            FieldAccess(
-                                                "d",
-                                            ),
-                                        ),
+                                    FieldAccess(
+                                        [
+                                            "error",
+                                        ],
                                     ),
                                 ),
                             ),
-                            Exponent(
-                                ConstNumber(
-                                    "10",
-                                ),
-                                PostIncrement(
-                                    "counter",
+                            Bracket(
+                                Subtract(
+                                    ConstNumber(
+                                        "1",
+                                    ),
+                                    FieldAccess(
+                                        [
+                                            "pid",
+                                            "r",
+                                        ],
+                                    ),
                                 ),
                             ),
                         ),
-                    ),
-                ),
-            ],
-            attributes: [],
-        },
-        CallableDefinition {
-            name: "parse_base16_char",
-            call_type: Macro,
-            parameters: [
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "input",
-                        typename: "string",
-                    },
-                    copy: false,
-                },
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "output",
-                        typename: "number",
-                    },
-                    copy: false,
-                },
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "counter",
-                        typename: "number",
-                    },
-                    copy: false,
-                },
-            ],
-            return_type: None,
-            statements: [
-                DeclareConst(
-                    FieldDefinition {
-                        name: "x",
-                        typename: "string",
-                    },
-                    ConstString(
-                        "FDB97531",
-                    ),
-                ),
-                DeclareConst(
-                    FieldDefinition {
-                        name: "y",
-                        typename: "string",
-                    },
-                    ConstString(
-                        "FEBA7632",
-                    ),
-                ),
-                DeclareAssign(
-                    FieldDefinition {
-                        name: "c",
-                        typename: "string",
-                    },
-                    Subtract(
-                        FieldAccess(
-                            "input",
-                        ),
-                        Negate(
-                            Negate(
-                                FieldAccess(
-                                    "input",
-                                ),
+                        Multiply(
+                            FieldAccess(
+                                [
+                                    "pid",
+                                    "state",
+                                    "previous_derivative",
+                                ],
+                            ),
+                            FieldAccess(
+                                [
+                                    "pid",
+                                    "r",
+                                ],
                             ),
                         ),
                     ),
                 ),
                 Assign(
-                    "output",
+                    [
+                        "pid",
+                        "state",
+                        "previous_derivative",
+                    ],
+                    FieldAccess(
+                        [
+                            "dedt",
+                        ],
+                    ),
+                ),
+                Assign(
+                    [
+                        "pid",
+                        "state",
+                        "previous_error",
+                    ],
+                    FieldAccess(
+                        [
+                            "error",
+                        ],
+                    ),
+                ),
+                Return(
                     Add(
-                        FieldAccess(
-                            "output",
+                        Add(
+                            Multiply(
+                                FieldAccess(
+                                    [
+                                        "pid",
+                                        "p",
+                                    ],
+                                ),
+                                FieldAccess(
+                                    [
+                                        "error",
+                                    ],
+                                ),
+                            ),
+                            Multiply(
+                                FieldAccess(
+                                    [
+                                        "pid",
+                                        "i",
+                                    ],
+                                ),
+                                FieldAccess(
+                                    [
+                                        "pid",
+                                        "integrated_error",
+                                    ],
+                                ),
+                            ),
                         ),
                         Multiply(
-                            Bracket(
-                                Add(
-                                    Add(
-                                        Multiply(
-                                            ConstNumber(
-                                                "4",
-                                            ),
-                                            Bracket(
-                                                Add(
-                                                    Add(
-                                                        Bracket(
-                                                            GreaterThan(
-                                                                FieldAccess(
-                                                                    "c",
-                                                                ),
-                                                                ConstNumber(
-                                                                    "3",
-                                                                ),
-                                                            ),
-                                                        ),
-                                                        Bracket(
-                                                            GreaterThan(
-                                                                FieldAccess(
-                                                                    "c",
-                                                                ),
-                                                                ConstNumber(
-                                                                    "7",
-                                                                ),
-                                                            ),
-                                                        ),
-                                                    ),
-                                                    Bracket(
-                                                        GreaterThan(
-                                                            FieldAccess(
-                                                                "c",
-                                                            ),
-                                                            ConstString(
-                                                                "B",
-                                                            ),
-                                                        ),
-                                                    ),
-                                                ),
-                                            ),
-                                        ),
-                                        Bracket(
-                                            GreaterThan(
-                                                FieldAccess(
-                                                    "x",
-                                                ),
-                                                Subtract(
-                                                    FieldAccess(
-                                                        "x",
-                                                    ),
-                                                    FieldAccess(
-                                                        "c",
-                                                    ),
-                                                ),
-                                            ),
-                                        ),
-                                    ),
-                                    Multiply(
-                                        ConstNumber(
-                                            "2",
-                                        ),
-                                        Bracket(
-                                            GreaterThan(
-                                                FieldAccess(
-                                                    "y",
-                                                ),
-                                                Subtract(
-                                                    FieldAccess(
-                                                        "y",
-                                                    ),
-                                                    FieldAccess(
-                                                        "c",
-                                                    ),
-                                                ),
-                                            ),
-                                        ),
-                                    ),
-                                ),
-                            ),
-                            Exponent(
-                                ConstNumber(
-                                    "16",
-                                ),
-                                PostIncrement(
-                                    "counter",
-                                ),
-                            ),
-                        ),
-                    ),
-                ),
-            ],
-            attributes: [],
-        },
-        CallableDefinition {
-            name: "assert",
-            call_type: Macro,
-            parameters: [
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "a",
-                        typename: "bool",
-                    },
-                    copy: false,
-                },
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "msg",
-                        typename: "string",
-                    },
-                    copy: false,
-                },
-            ],
-            return_type: None,
-            statements: [
-                If(
-                    Not(
-                        FieldAccess(
-                            "a",
-                        ),
-                    ),
-                    [
-                        ExternalAssign(
-                            "assert_fail_msg",
                             FieldAccess(
-                                "msg",
-                            ),
-                        ),
-                    ],
-                    [],
-                ),
-            ],
-            attributes: [
-                Attribute {
-                    name: "cfg",
-                    parameters: [
-                        ConstString(
-                            "test",
-                        ),
-                    ],
-                },
-            ],
-        },
-        CallableDefinition {
-            name: "assert_eq",
-            call_type: Macro,
-            parameters: [
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "a",
-                        typename: "any",
-                    },
-                    copy: false,
-                },
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "b",
-                        typename: "any",
-                    },
-                    copy: false,
-                },
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "msg",
-                        typename: "string",
-                    },
-                    copy: false,
-                },
-            ],
-            return_type: None,
-            statements: [
-                Call(
-                    "assert",
-                    [
-                        Equals(
-                            FieldAccess(
-                                "a",
+                                [
+                                    "pid",
+                                    "d",
+                                ],
                             ),
                             FieldAccess(
-                                "b",
+                                [
+                                    "dedt",
+                                ],
                             ),
                         ),
-                        FieldAccess(
-                            "msg",
-                        ),
-                    ],
-                ),
-            ],
-            attributes: [
-                Attribute {
-                    name: "cfg",
-                    parameters: [
-                        ConstString(
-                            "test",
-                        ),
-                    ],
-                },
-            ],
-        },
-        CallableDefinition {
-            name: "assert_neq",
-            call_type: Macro,
-            parameters: [
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "a",
-                        typename: "any",
-                    },
-                    copy: false,
-                },
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "b",
-                        typename: "any",
-                    },
-                    copy: false,
-                },
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "msg",
-                        typename: "string",
-                    },
-                    copy: false,
-                },
-            ],
-            return_type: None,
-            statements: [
-                Call(
-                    "assert",
-                    [
-                        NotEquals(
-                            FieldAccess(
-                                "a",
-                            ),
-                            FieldAccess(
-                                "b",
-                            ),
-                        ),
-                        FieldAccess(
-                            "msg",
-                        ),
-                    ],
-                ),
-            ],
-            attributes: [
-                Attribute {
-                    name: "cfg",
-                    parameters: [
-                        ConstString(
-                            "test",
-                        ),
-                    ],
-                },
-            ],
-        },
-        CallableDefinition {
-            name: "abs",
-            call_type: Macro,
-            parameters: [
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "a",
-                        typename: "number",
-                    },
-                    copy: false,
-                },
-            ],
-            return_type: Some(
-                "number",
-            ),
-            statements: [
-                DeclareAssign(
-                    FieldDefinition {
-                        name: "r",
-                        typename: "number",
-                    },
-                    ConstNumber(
-                        "0",
-                    ),
-                ),
-                Emit(
-                    "r = abs a",
-                ),
-                Return(
-                    FieldAccess(
-                        "r",
-                    ),
-                ),
-            ],
-            attributes: [],
-        },
-        CallableDefinition {
-            name: "sqrt",
-            call_type: Macro,
-            parameters: [
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "a",
-                        typename: "number",
-                    },
-                    copy: false,
-                },
-            ],
-            return_type: Some(
-                "number",
-            ),
-            statements: [
-                DeclareAssign(
-                    FieldDefinition {
-                        name: "r",
-                        typename: "number",
-                    },
-                    ConstNumber(
-                        "0",
-                    ),
-                ),
-                Emit(
-                    "r = sqrt a",
-                ),
-                Return(
-                    FieldAccess(
-                        "r",
-                    ),
-                ),
-            ],
-            attributes: [],
-        },
-        CallableDefinition {
-            name: "sin",
-            call_type: Macro,
-            parameters: [
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "a",
-                        typename: "number",
-                    },
-                    copy: false,
-                },
-            ],
-            return_type: Some(
-                "number",
-            ),
-            statements: [
-                DeclareAssign(
-                    FieldDefinition {
-                        name: "r",
-                        typename: "number",
-                    },
-                    ConstNumber(
-                        "0",
-                    ),
-                ),
-                Emit(
-                    "r = sin a",
-                ),
-                Return(
-                    FieldAccess(
-                        "r",
-                    ),
-                ),
-            ],
-            attributes: [],
-        },
-        CallableDefinition {
-            name: "cos",
-            call_type: Macro,
-            parameters: [
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "a",
-                        typename: "number",
-                    },
-                    copy: false,
-                },
-            ],
-            return_type: Some(
-                "number",
-            ),
-            statements: [
-                DeclareAssign(
-                    FieldDefinition {
-                        name: "r",
-                        typename: "number",
-                    },
-                    ConstNumber(
-                        "0",
-                    ),
-                ),
-                Emit(
-                    "r = cos a",
-                ),
-                Return(
-                    FieldAccess(
-                        "r",
-                    ),
-                ),
-            ],
-            attributes: [],
-        },
-        CallableDefinition {
-            name: "tan",
-            call_type: Macro,
-            parameters: [
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "a",
-                        typename: "number",
-                    },
-                    copy: false,
-                },
-            ],
-            return_type: Some(
-                "number",
-            ),
-            statements: [
-                DeclareAssign(
-                    FieldDefinition {
-                        name: "r",
-                        typename: "number",
-                    },
-                    ConstNumber(
-                        "0",
-                    ),
-                ),
-                Emit(
-                    "r = tan a",
-                ),
-                Return(
-                    FieldAccess(
-                        "r",
-                    ),
-                ),
-            ],
-            attributes: [],
-        },
-        CallableDefinition {
-            name: "asin",
-            call_type: Macro,
-            parameters: [
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "a",
-                        typename: "number",
-                    },
-                    copy: false,
-                },
-            ],
-            return_type: Some(
-                "number",
-            ),
-            statements: [
-                DeclareAssign(
-                    FieldDefinition {
-                        name: "r",
-                        typename: "number",
-                    },
-                    ConstNumber(
-                        "0",
-                    ),
-                ),
-                Emit(
-                    "r = asin a",
-                ),
-                Return(
-                    FieldAccess(
-                        "r",
-                    ),
-                ),
-            ],
-            attributes: [],
-        },
-        CallableDefinition {
-            name: "acos",
-            call_type: Macro,
-            parameters: [
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "a",
-                        typename: "number",
-                    },
-                    copy: false,
-                },
-            ],
-            return_type: Some(
-                "number",
-            ),
-            statements: [
-                DeclareAssign(
-                    FieldDefinition {
-                        name: "r",
-                        typename: "number",
-                    },
-                    ConstNumber(
-                        "0",
-                    ),
-                ),
-                Emit(
-                    "r = acos a",
-                ),
-                Return(
-                    FieldAccess(
-                        "r",
-                    ),
-                ),
-            ],
-            attributes: [],
-        },
-        CallableDefinition {
-            name: "atan",
-            call_type: Macro,
-            parameters: [
-                ParameterDefinition {
-                    field: FieldDefinition {
-                        name: "a",
-                        typename: "number",
-                    },
-                    copy: false,
-                },
-            ],
-            return_type: Some(
-                "number",
-            ),
-            statements: [
-                DeclareAssign(
-                    FieldDefinition {
-                        name: "r",
-                        typename: "number",
-                    },
-                    ConstNumber(
-                        "0",
-                    ),
-                ),
-                Emit(
-                    "r = atan a",
-                ),
-                Return(
-                    FieldAccess(
-                        "r",
                     ),
                 ),
             ],
             attributes: [],
         },
     ],
-    main: Some(
-        MainDefinition {
-            statements: [
-                CompilePanic(
-                    "contents of `main` block remain unimplemented",
-                ),
-            ],
-        },
-    ),
+    main: None,
 }

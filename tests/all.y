@@ -32,4 +32,6 @@ def macro bar(bar:   foo, copy x:y) {
 comment */
 main { // another comment
     todo_body
+
+    panic("oh no");
 }

@@ -139,7 +139,7 @@ pub enum Statement {
     Call(String, Vec<Expression>),
     If(Expression, Vec<Statement>, Vec<Statement>),
 
-    Assign(String, Expression),
+    Assign(Vec<String>, Expression),
     DeclareAssign(FieldDefinition, Expression),
     DeclareConst(FieldDefinition, Expression),
     ExternalAssign(String, Expression),
@@ -153,7 +153,7 @@ pub enum Expression {
 
     ConstNumber(String),
     ConstString(String),
-    FieldAccess(String),
+    FieldAccess(Vec<String>),
     ExternalFieldAccess(String),
     Negate(Box<Expression>),
     Not(Box<Expression>),
@@ -168,12 +168,12 @@ pub enum Expression {
     Exponent(Box<Expression>, Box<Expression>),
     And(Box<Expression>, Box<Expression>),
     Or(Box<Expression>, Box<Expression>),
+    Bracket(Box<Expression>),
+
     GreaterThan(Box<Expression>, Box<Expression>),
     LessThan(Box<Expression>, Box<Expression>),
     GreaterThanOrEq(Box<Expression>, Box<Expression>),
     LessThanOrEq(Box<Expression>, Box<Expression>),
-    Bracket(Box<Expression>),
-
     Equals(Box<Expression>, Box<Expression>),
     NotEquals(Box<Expression>, Box<Expression>),
 
