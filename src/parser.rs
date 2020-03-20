@@ -212,6 +212,7 @@ peg::parser!{
                 "++" __ i:identifier() { Expression::PreIncrement(i) }
                 "--" __ i:identifier() { Expression::PreDecrement(i) }
                 --
+                "{" __ c:(constructor_field() ** ("," __)) __ ","? __ "}" { Expression::Constructor(c) }
                 n:number() { Expression::ConstNumber(n) }
                 s:string() { Expression::ConstString(s) }
                 ":" i:identifier() { Expression::ExternalFieldAccess(i) }
@@ -220,6 +221,9 @@ peg::parser!{
                 i:field_access() { Expression::FieldAccess(i) }
             }
 
+        rule constructor_field() -> (String, Expression)
+            = i:identifier() __ ":" __ e:expression()
+            { (i, e) }
 
         rule identifier() -> String
             = i:$(['A'..='Z' | 'a'..='z' | '_']['A'..='Z' | 'a'..='z' | '0'..='9' | '_']*)

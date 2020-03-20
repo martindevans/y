@@ -255,6 +255,43 @@ Program {
     main: Some(
         MainDefinition {
             statements: [
+                Inner(
+                    DeclareAssign(
+                        FieldDefinition {
+                            name: "controller",
+                            typename: "pid",
+                        },
+                        Constructor(
+                            [
+                                (
+                                    "constants",
+                                    Constructor(
+                                        [
+                                            (
+                                                "p",
+                                                ConstNumber(
+                                                    "1",
+                                                ),
+                                            ),
+                                            (
+                                                "i",
+                                                ConstNumber(
+                                                    "0.1",
+                                                ),
+                                            ),
+                                            (
+                                                "d",
+                                                ConstNumber(
+                                                    "0.01",
+                                                ),
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                ),
                 Loop(
                     [
                         Line(

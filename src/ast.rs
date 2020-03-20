@@ -188,4 +188,6 @@ pub enum Expression {
     PostDecrement(String),
     PreIncrement(String),
     PreDecrement(String),
+
+    Constructor(Vec<(String, Expression)>),
 }
