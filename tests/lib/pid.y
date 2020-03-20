@@ -32,3 +32,19 @@ def macro pid_update(pid: pid, target: number, measurement: number) -> number {
 
     return pid.p * error + pid.i * pid.integrated_error + pid.d * dedt;
 }
+
+main {
+    //controller = pid {
+    //    constants: pid_constants {
+    //        p: 1,
+    //        i: 0.1,
+    //        d: 0.01
+    //    }
+    //};
+
+    loop {
+        line {
+            :output = pid_update(controller, :target, :input);
+        };
+    };
+}

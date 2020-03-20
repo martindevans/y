@@ -252,5 +252,37 @@ Program {
             attributes: [],
         },
     ],
-    main: None,
+    main: Some(
+        MainDefinition {
+            statements: [
+                Loop(
+                    [
+                        Line(
+                            [
+                                ExternalAssign(
+                                    "output",
+                                    Call(
+                                        "pid_update",
+                                        [
+                                            FieldAccess(
+                                                [
+                                                    "controller",
+                                                ],
+                                            ),
+                                            ExternalFieldAccess(
+                                                "target",
+                                            ),
+                                            ExternalFieldAccess(
+                                                "input",
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+            ],
+        },
+    ),
 }

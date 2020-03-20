@@ -1,4 +1,4 @@
-use super::ast::{ Program, Import, EnumDefinition, StructDefinition, CallableDefinition, CallType, MainDefinition, FieldDefinition, EnumItemDefinition, RangeDefinition, ParameterDefinition, Statement, Attribute, Expression, Constant };
+use super::ast::{ Program, Import, EnumDefinition, StructDefinition, CallableDefinition, CallType, MainDefinition, FieldDefinition, EnumItemDefinition, RangeDefinition, ParameterDefinition, InnerStatement, OuterStatement, Attribute, Expression, Constant };
 
 // C parser grammar: https://github.com/vickenty/lang-c/blob/master/grammar.rustpeg
 
@@ -30,7 +30,7 @@ peg::parser!{
     pub grammar y_parser() for str {
 
         pub rule program() -> Program
-            = __ i:import()* __ t:typedef()* __ con:constant()* __ c:callable()* __ m:main()?
+            = __ i:import()* __ t:typedef()* __ con:constant()* __ c:callable()* __ m:main()? __
             {
                 let (enums, structs, ranges) = split_types(t);
 
@@ -112,40 +112,53 @@ peg::parser!{
             / expected!("Expected call type specifier")
 
         rule main() -> MainDefinition
-            = "main" __ "{" __ s:statement_list() __ "}"
+            = "main" __ "{" __ s:outer_statement_list() __ "}"
             { MainDefinition {
                 statements: s
             }}
 
 
+        rule outer_statement_list() -> Vec<OuterStatement>
+            = s:(outer_statement() ** (";" __)) ";"
+            { s }
+            / __
+            { Vec::<OuterStatement>::new() }
 
-        rule statement_list() -> Vec<Statement>
+        rule outer_statement() -> OuterStatement
+            = "loop" __ "{" __ l:outer_statement_list() __ "}"
+            { OuterStatement::Loop(l) }
+            / "line" __ "{" __ l:statement_list() __ "}"
+            { OuterStatement::Line(l) }
+            / s:statement()
+            { OuterStatement::Inner(s) }
+
+        rule statement_list() -> Vec<InnerStatement>
             = s:(statement() ** (";" __)) ";"
             { s }
             / __
-            { Vec::<Statement>::new() }
+            { Vec::<InnerStatement>::new() }
 
-        rule statement() -> Statement
+        rule statement() -> InnerStatement
             = "panic" __ "(" __ m:string() __ ")"
-            { Statement::CompilePanic(m) }
+            { InnerStatement::CompilePanic(m) }
             / "if" __ "(" __ c:expression() __ ")" __ "{" __ t:statement_list() __ "}" f:(__ "else" __ "{" __ f:statement_list() __ "}" { f })?
-            { Statement::If(c, t, f.unwrap_or(Vec::new())) }
+            { InnerStatement::If(c, t, f.unwrap_or(Vec::new())) }
             / "return" __ e:expression()
-            { Statement::Return(e) }
+            { InnerStatement::Return(e) }
             / "emit" __ "{" __ s:string() __ "}"
-            { Statement::Emit(s) }
+            { InnerStatement::Emit(s) }
             / i:identifier() __ "(" __ a:(expression() ** ("," __)) __ ")"
-            { Statement::Call(i, a) }
+            { InnerStatement::Call(i, a) }
             / "var" __ f:field() __ "=" __ e:expression()
-            { Statement::DeclareAssign(f, e) }
+            { InnerStatement::DeclareAssign(f, e) }
             / "const" __ f:field() __ "=" __ e:expression()
-            { Statement::DeclareConst(f, e) }
+            { InnerStatement::DeclareConst(f, e) }
             / i:field_access() __ "=" __ e:expression()
-            { Statement::Assign(i, e) }
+            { InnerStatement::Assign(i, e) }
             / ":" i:identifier() __ "=" __ e:expression()
-            { Statement::ExternalAssign(i, e) }
+            { InnerStatement::ExternalAssign(i, e) }
             / i:field_access() __ "+=" __ e:expression()
-            { Statement::Assign(i.clone(), Expression::Add(Box::new(Expression::FieldAccess(i)), Box::new(e)))}
+            { InnerStatement::Assign(i.clone(), Expression::Add(Box::new(Expression::FieldAccess(i)), Box::new(e)))}
 
         rule field_access() -> Vec<String> =
             s:identifier() f:("." f:(f:identifier() ** "." { f }) { f })?

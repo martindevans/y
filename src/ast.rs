@@ -103,7 +103,7 @@ pub struct CallableDefinition {
     pub call_type: CallType,
     pub parameters: Vec<ParameterDefinition>,
     pub return_type: Option<String>,
-    pub statements: Vec<Statement>,
+    pub statements: Vec<InnerStatement>,
     pub attributes: Vec<Attribute>
 }
 
@@ -115,7 +115,7 @@ pub struct ParameterDefinition {
 
 #[derive(Debug)]
 pub struct MainDefinition {
-    pub statements: Vec<Statement>
+    pub statements: Vec<OuterStatement>
 }
 
 #[derive(Debug)]
@@ -131,13 +131,20 @@ pub struct Attribute {
 }
 
 #[derive(Debug)]
-pub enum Statement {
+pub enum OuterStatement {
+    Loop(Vec<OuterStatement>),
+    Line(Vec<InnerStatement>),
+    Inner(InnerStatement),
+}
+
+#[derive(Debug)]
+pub enum InnerStatement {
     CompilePanic(String),
 
     Emit(String),
 
     Call(String, Vec<Expression>),
-    If(Expression, Vec<Statement>, Vec<Statement>),
+    If(Expression, Vec<InnerStatement>, Vec<InnerStatement>),
 
     Assign(Vec<String>, Expression),
     DeclareAssign(FieldDefinition, Expression),
