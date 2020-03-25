@@ -6,7 +6,7 @@ pub struct Program {
     pub structs: Vec<StructDefinition>,
     pub ranges: Vec<RangeDefinition>,
     pub callables: Vec<CallableDefinition>,
-    pub main: Option<MainDefinition>,
+    pub main: Option<Main>,
 }
 
 impl Program {
@@ -114,13 +114,18 @@ pub struct ParameterDefinition {
 }
 
 #[derive(Debug)]
-pub struct MainDefinition {
+pub struct Main {
     pub statements: Vec<OuterStatement>
 }
 
 #[derive(Debug)]
 pub struct FieldDefinition {
     pub name: String,
+    pub typename: TypeName
+}
+
+#[derive(Debug, Clone)]
+pub struct TypeName {
     pub typename: String
 }
 
@@ -132,14 +137,15 @@ pub struct Attribute {
 
 #[derive(Debug)]
 pub enum OuterStatement {
-    Loop(Vec<OuterStatement>),
-    Line(Vec<InnerStatement>),
+    //Loop(Vec<OuterStatement>),
+    Line(Vec<InnerStatement>, Option<String>),
     Inner(InnerStatement),
+    Label(String),
 }
 
 #[derive(Debug)]
 pub enum InnerStatement {
-    CompilePanic(String),
+    CompilePanic(String, usize),
 
     Emit(String),
 
@@ -151,12 +157,13 @@ pub enum InnerStatement {
     DeclareConst(FieldDefinition, Expression),
     ExternalAssign(String, Expression),
 
-    Return(Expression)
+    Return(Expression),
+    Goto(String)
 }
 
 #[derive(Debug)]
 pub enum Expression {
-    CompilePanic(String),
+    CompilePanic(String, usize),
 
     ConstNumber(String),
     ConstString(String),

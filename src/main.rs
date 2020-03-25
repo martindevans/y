@@ -10,13 +10,12 @@ use rayon::prelude::*;
 use peg_runtime;
 use colored::Colorize;
 
-mod parser;
-mod ast;
+mod grammar;
+mod compiler;
+mod error;
+mod yolol;
 
-enum CompilerError {
-    IO(PathBuf, std::io::Error),
-    Parse(PathBuf, String, peg_runtime::error::ParseError<peg_runtime::str::LineCol>),
-}
+use error::CompilerError;
 
 fn main() {
 
@@ -35,6 +34,10 @@ fn main() {
         Ok(()) => {},
         Err(CompilerError::IO(path, io)) => io_err_handler(&path, io),
         Err(CompilerError::Parse(path, code, err)) => parser_error_handler(&path, &code, err),
+        Err(CompilerError::NoMainBlock) => println!("\n{}", "# No `main` block in program!".red()),
+        Err(CompilerError::ExplicitPanic(msg, pos)) => println!("{}", format!("\n# ({:?}) Explicit Panic: `{}`", pos, msg).red()),
+        Err(CompilerError::DuplicateFieldDeclaration(name)) => println!("{}", format!("\n# Field `{}` has already been declared", name).red()),
+        Err(CompilerError::AssigningUndeclaredField(path)) => println!("{}", format!("\n# Assigning to nonexistent field `{:?}`", path).red()),
     }
 }
 
@@ -49,32 +52,48 @@ fn compile(input: &PathBuf, output: &PathBuf) -> Result<(), CompilerError> {
 
     fn print_examples<T, F>(title: &str, items: &Vec<T>, extract: F) where F: FnMut(&T) -> &str {
         if items.len() > 0 {
-            println!("| {} {} (e.g. {})", items.len(), title, items.iter().take(5).map(extract).map(|x| x.clone()).collect::<Vec<_>>().join(", "));
+            println!("| | {} {} (e.g. {})", items.len(), title, items.iter().take(5).map(extract).map(|x| x.clone()).collect::<Vec<_>>().join(", "));
         } else {
-            println!("| 0 {}", title);
+            println!("| | 0 {}", title);
         }
     }
 
     println!("# Compiling");
     let now = Instant::now();
-    println!("| todo: compile");
+    println!("| # Examples");
     print_examples("constants", &ast.constants, |x| &x.field.name);
     print_examples("enums", &ast.enums, |x| &x.name);
     print_examples("ranges", &ast.ranges, |x| &x.name);
     print_examples("structs", &ast.structs, |x| &x.name);
     print_examples("callables", &ast.callables, |x| &x.name);
-    fs::write(output, format!("{:#?}", ast)).map_err(|x| CompilerError::IO(output.clone(), x))?;
+
+    fn do_with_timing<R, F: FnOnce() -> R>(title: &str, f: F) -> R {
+        let start = Instant::now();
+        let r = f();
+        let end = (start.elapsed().as_micros() as f64) / 1000.0f64;
+        println!("| # {} ({}ms)", title, end);
+        return r;
+    }
+
+    let blocks = do_with_timing("Build Blocks", || ast.build_blocks())?;
+    println!("| | {} blocks", blocks.blocks.len());
+    let blocks = do_with_timing("Convert Blocks", || blocks.covert_yolol_blocks())?;
+    println!("| | {} type mappings", blocks.types.len());
+    println!("| | {} const expr", blocks.consts.len());
+
+    fs::write(output, format!("{:#?}", blocks)).map_err(|x| CompilerError::IO(output.clone(), x))?;
+
     println!("# {}ms", now.elapsed().as_millis());
 
     Ok(())
 }
 
-fn try_parse(path: &PathBuf, depth: usize) -> Result<ast::Program, CompilerError> {
+fn try_parse(path: &PathBuf, depth: usize) -> Result<grammar::ast::Program, CompilerError> {
 
     // Parse this file
     //let now = Instant::now();
     let code = fs::read_to_string(path).map_err(|x| CompilerError::IO(path.clone(), x))?;
-    let ast = parser::y_parser::program(&code).map_err(|x| CompilerError::Parse(path.clone(), code, x))?;
+    let ast = grammar::parser::y_parser::program(&code).map_err(|x| CompilerError::Parse(path.clone(), code, x))?;
     //println!("# {}: {}us", path.display(), now.elapsed().as_micros());
 
     // Parse imported files and merge into this ast

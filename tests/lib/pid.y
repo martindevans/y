@@ -34,17 +34,21 @@ def macro pid_update(pid: pid, target: number, measurement: number) -> number {
 }
 
 main {
-    var controller:pid = {
+    /* var controller:pid = {
         constants: {
             p: 1,
             i: 0.1,
             d: 0.01,
         }
-    };
+    }; */
+    const p:number = 1;
+    var i:number = 0.1;
+    var d:number = 0.01;
 
-    loop {
-        line {
-            :output = pid_update(controller, :target, :input);
-        };
+    @label;
+
+    line(loop_start) {
+    //    :output = pid_update(controller, :target, :input);
+    //    goto loop_start;
     };
 }

@@ -1,4 +1,4 @@
-use super::ast::{ Program, Import, EnumDefinition, StructDefinition, CallableDefinition, CallType, MainDefinition, FieldDefinition, EnumItemDefinition, RangeDefinition, ParameterDefinition, InnerStatement, OuterStatement, Attribute, Expression, Constant };
+use super::ast::*;
 
 // C parser grammar: https://github.com/vickenty/lang-c/blob/master/grammar.rustpeg
 
@@ -111,9 +111,9 @@ peg::parser!{
             / "macro" { CallType::Macro }
             / expected!("Expected call type specifier")
 
-        rule main() -> MainDefinition
+        rule main() -> Main
             = "main" __ "{" __ s:outer_statement_list() __ "}"
-            { MainDefinition {
+            { Main {
                 statements: s
             }}
 
@@ -125,10 +125,12 @@ peg::parser!{
             { Vec::<OuterStatement>::new() }
 
         rule outer_statement() -> OuterStatement
-            = "loop" __ "{" __ l:outer_statement_list() __ "}"
-            { OuterStatement::Loop(l) }
-            / "line" __ "{" __ l:statement_list() __ "}"
-            { OuterStatement::Line(l) }
+            = "line" __ id:("(" id:identifier() ")" { id })? __ "{" __ l:statement_list() __ "}"
+            { OuterStatement::Line(l, id) }
+            //"loop" __ "{" __ l:outer_statement_list() __ "}"
+            //{ OuterStatement::Loop(l) }
+            / "@" i:identifier()
+            { OuterStatement::Label(i) }
             / s:statement()
             { OuterStatement::Inner(s) }
 
@@ -139,14 +141,16 @@ peg::parser!{
             { Vec::<InnerStatement>::new() }
 
         rule statement() -> InnerStatement
-            = "panic" __ "(" __ m:string() __ ")"
-            { InnerStatement::CompilePanic(m) }
+            = p:position!() "panic" __ "(" __ m:string() __ ")"
+            { InnerStatement::CompilePanic(m, p) }
             / "if" __ "(" __ c:expression() __ ")" __ "{" __ t:statement_list() __ "}" f:(__ "else" __ "{" __ f:statement_list() __ "}" { f })?
             { InnerStatement::If(c, t, f.unwrap_or(Vec::new())) }
             / "return" __ e:expression()
             { InnerStatement::Return(e) }
             / "emit" __ "{" __ s:string() __ "}"
             { InnerStatement::Emit(s) }
+            / "goto" __ i:identifier()
+            { InnerStatement::Goto(i) }
             / i:identifier() __ "(" __ a:(expression() ** ("," __)) __ ")"
             { InnerStatement::Call(i, a) }
             / "var" __ f:field() __ "=" __ e:expression()
@@ -179,7 +183,7 @@ peg::parser!{
 
         rule expression() -> Expression
             = precedence!{
-                "panic" __ "(" __ m:string() __ ")" { Expression::CompilePanic(m) }
+                p:position!() "panic" __ "(" __ m:string() __ ")" { Expression::CompilePanic(m, p) }
                 --
                 x:(@) __ "&" "&"? __ y:@ { Expression::And(Box::new(x), Box::new(y)) }
                 --
@@ -239,7 +243,7 @@ peg::parser!{
 
         rule field() -> FieldDefinition
             = n:identifier() __ ":" __ t:identifier()
-            { FieldDefinition { name: n, typename: t } }
+            { FieldDefinition { name: n, typename: TypeName { typename: t } } }
 
         rule string() -> String
             = "\"" s:$((!"\"" [_])*) "\""
