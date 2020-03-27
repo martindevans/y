@@ -47,10 +47,10 @@ YololStatementBlocks {
         "p": TypeName {
             typename: "number",
         },
-        "d": TypeName {
+        "i": TypeName {
             typename: "number",
         },
-        "i": TypeName {
+        "d": TypeName {
             typename: "number",
         },
     },

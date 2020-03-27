@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use crate::compiler::Type;
 
 pub enum CompilerError {
     IO(PathBuf, std::io::Error),
@@ -8,4 +9,5 @@ pub enum CompilerError {
     CompilerStageNotImplemented(String),
     DuplicateFieldDeclaration(String),
     AssigningUndeclaredField(Vec<String>),
+    TypeCheckFailed(Type, Type),
 }
