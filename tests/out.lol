@@ -44,13 +44,13 @@ YololStatementBlocks {
         ),
     ],
     types: {
-        "p": TypeName {
-            typename: "number",
-        },
         "i": TypeName {
             typename: "number",
         },
         "d": TypeName {
+            typename: "number",
+        },
+        "p": TypeName {
             typename: "number",
         },
     },

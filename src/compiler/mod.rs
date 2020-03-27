@@ -1,4 +1,5 @@
 mod initial_blocks;
 mod yolol_blocks;
+mod typecheck;
 
-pub use yolol_blocks::Type;
+pub use typecheck::{ Type };
