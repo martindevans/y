@@ -5,6 +5,7 @@ pub enum CompilerError {
     Parse(PathBuf, String, peg_runtime::error::ParseError<peg_runtime::str::LineCol>),
     NoMainBlock,
     ExplicitPanic(String, usize),
+    CompilerStageNotImplemented(String),
     DuplicateFieldDeclaration(String),
     AssigningUndeclaredField(Vec<String>),
 }

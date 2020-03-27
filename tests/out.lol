@@ -23,17 +23,20 @@ YololStatementBlocks {
                 ),
             ],
         ),
-        Statements(
-            Some(
-                "label",
-            ),
-            [],
-        ),
         Line(
             Some(
                 "loop_start",
             ),
-            [],
+            [
+                Goto(
+                    VariableAccess(
+                        Identifier {
+                            name: "goto_layout_label_loop_start",
+                            external: false,
+                        },
+                    ),
+                ),
+            ],
         ),
         Statements(
             None,
@@ -41,13 +44,13 @@ YololStatementBlocks {
         ),
     ],
     types: {
-        "i": TypeName {
+        "p": TypeName {
             typename: "number",
         },
         "d": TypeName {
             typename: "number",
         },
-        "p": TypeName {
+        "i": TypeName {
             typename: "number",
         },
     },

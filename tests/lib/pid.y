@@ -45,10 +45,8 @@ main {
     var i:number = 0.1;
     var d:number = 0.01;
 
-    @label;
-
     line(loop_start) {
-    //    :output = pid_update(controller, :target, :input);
-    //    goto loop_start;
+        //:output = pid_update(controller, :target, :input);
+        goto loop_start;
     };
 }

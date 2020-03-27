@@ -38,6 +38,7 @@ fn main() {
         Err(CompilerError::ExplicitPanic(msg, pos)) => println!("{}", format!("\n# ({:?}) Explicit Panic: `{}`", pos, msg).red()),
         Err(CompilerError::DuplicateFieldDeclaration(name)) => println!("{}", format!("\n# Field `{}` has already been declared", name).red()),
         Err(CompilerError::AssigningUndeclaredField(path)) => println!("{}", format!("\n# Assigning to nonexistent field `{:?}`", path).red()),
+        Err(CompilerError::CompilerStageNotImplemented(msg)) => println!("{}", format!("\n# Not Implemented: `{}`", msg).red()),
     }
 }
 
