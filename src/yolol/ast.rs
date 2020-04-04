@@ -1,3 +1,5 @@
+use yolol_number::YololNumber;
+
 #[derive(Debug, Clone)]
 pub struct Program {
     pub lines: Vec<Line>
@@ -27,7 +29,7 @@ pub enum Statement {
 
 #[derive(Debug, Clone)]
 pub enum Expression {
-    ConstantNumber(String),        //todo: use yolol_number
+    ConstantNumber(YololNumber),
     ConstantString(String),
     VariableAccess(Identifier),
 

@@ -31,7 +31,8 @@ def macro bar(bar:   foo, copy x:y) {
 /* comment 
 comment */
 main { // another comment
-    todo_body
+    var x:bool = 1 is number;
+    var y:bool = 1 is string;
 
     panic("oh no");
 }

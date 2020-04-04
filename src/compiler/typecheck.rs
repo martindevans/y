@@ -93,6 +93,7 @@ pub fn infer_expr_type(expr: &Expression, fields: &HashMap<String, Type>) -> Res
         Expression::LessThanOrEq(_, _) => Type::Bool,
         Expression::Equals(_, _) => Type::Bool,
         Expression::NotEquals(_, _) => Type::Bool,
+        Expression::Is(_, _) => Type::Bool,
 
         Expression::Negate(a) => {
             let t = infer_expr_type(a, fields)?;

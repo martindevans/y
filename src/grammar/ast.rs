@@ -161,11 +161,13 @@ pub enum InnerStatement {
     Goto(String)
 }
 
+use yolol_number::YololNumber;
+
 #[derive(Debug, Clone)]
 pub enum Expression {
     CompilePanic(String, usize),
 
-    ConstNumber(String),
+    ConstNumber(YololNumber),
     ConstString(String),
     FieldAccess(Vec<String>),
     ExternalFieldAccess(String),
@@ -173,7 +175,7 @@ pub enum Expression {
     Not(Box<Expression>),
     Call(String, Vec<Expression>),
 
-    Is(Box<Expression>, String),
+    Is(Box<Expression>, TypeName),
     Add(Box<Expression>, Box<Expression>),
     Subtract(Box<Expression>, Box<Expression>),
     Multiply(Box<Expression>, Box<Expression>),
@@ -191,10 +193,10 @@ pub enum Expression {
     Equals(Box<Expression>, Box<Expression>),
     NotEquals(Box<Expression>, Box<Expression>),
 
-    PostIncrement(String),
-    PostDecrement(String),
-    PreIncrement(String),
-    PreDecrement(String),
+    PostIncrement(Vec<String>),
+    PostDecrement(Vec<String>),
+    PreIncrement(Vec<String>),
+    PreDecrement(Vec<String>),
 
     Constructor(TypeName, Vec<(String, Expression)>),
 }

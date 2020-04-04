@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use yolol_number::prelude::*;
+
 use crate::grammar::ast::{ InnerStatement, OuterStatement, Expression };
 use crate::error::{ CompilerError };
 use crate::yolol;
@@ -100,7 +102,7 @@ impl InitialStatementBlocks {
                 InnerStatement::If(condition, pass, fail) => {
                     Ok(vec![
                         yolol::ast::Statement::If(
-                            handle_expr(condition)?,
+                            handle_expr(condition, types)?,
                             Box::new(yolol::ast::StatementList { statements: handle_inner_stmts(pass, types, consts)? }),
                             Box::new(yolol::ast::StatementList { statements: handle_inner_stmts(fail, types, consts)? })
                         )
@@ -122,7 +124,7 @@ impl InitialStatementBlocks {
                             name: name,
                             external: false
                         },
-                        handle_expr(value)?
+                        handle_expr(value, types)?
                     );
 
                     return Ok(vec![r]);
@@ -141,7 +143,7 @@ impl InitialStatementBlocks {
                             name: field.name.clone(),
                             external: false
                         },
-                        handle_expr(value)?
+                        handle_expr(value, types)?
                     );
     
                     return Ok(vec![r]);
@@ -154,7 +156,7 @@ impl InitialStatementBlocks {
 
                     type_check_assignment(&Type::Other(field.typename.clone()), &infer_expr_type(&value, types)?)?;
                     types.insert(field.name.clone(), field.typename.to_type());
-                    consts.insert(field.name.clone(), handle_expr(value)?);
+                    consts.insert(field.name.clone(), handle_expr(value, types)?);
 
                     return Ok(Vec::new());
                 },
@@ -168,7 +170,7 @@ impl InitialStatementBlocks {
                             name: field.clone(),
                             external: true
                         },
-                        handle_expr(value)?
+                        handle_expr(value, types)?
                     );
 
                     return Ok(vec![r]);
@@ -197,35 +199,53 @@ impl InitialStatementBlocks {
             return Err(CompilerError::CompilerStageNotImplemented(format!("Find Call `{}`", name)));
         }
 
-        fn handle_expr(expr: &Expression) -> Result<yolol::ast::Expression, CompilerError> {
+        fn handle_expr(expr: &Expression, types: &mut HashMap<String, Type>) -> Result<yolol::ast::Expression, CompilerError> {
             Ok(match expr {
+
+                Expression::CompilePanic(msg, pos) => return Err(CompilerError::ExplicitPanic(msg.to_string(), *pos)),
+
                 Expression::ConstNumber(x) => yolol::ast::Expression::ConstantNumber(x.clone()),
                 Expression::ConstString(x) => yolol::ast::Expression::ConstantString(x.clone()),
 
-                Expression::Bracket(x) => yolol::ast::Expression::Bracket(Box::new(handle_expr(x)?)),
-                Expression::Negate(x) => yolol::ast::Expression::Negate(Box::new(handle_expr(x)?)),
-                Expression::Not(x) => yolol::ast::Expression::Not(Box::new(handle_expr(x)?)),
+                Expression::Bracket(x) => yolol::ast::Expression::Bracket(Box::new(handle_expr(x, types)?)),
+                Expression::Negate(x) => yolol::ast::Expression::Negate(Box::new(handle_expr(x, types)?)),
+                Expression::Not(x) => yolol::ast::Expression::Not(Box::new(handle_expr(x, types)?)),
 
-                Expression::Add(x, y) => yolol::ast::Expression::Add(Box::new(handle_expr(&x)?), Box::new(handle_expr(&y)?)),
-                Expression::Subtract(x, y) => yolol::ast::Expression::Subtract(Box::new(handle_expr(&x)?), Box::new(handle_expr(&y)?)),
-                Expression::Multiply(x, y) => yolol::ast::Expression::Multiply(Box::new(handle_expr(&x)?), Box::new(handle_expr(&y)?)),
-                Expression::Divide(x, y) => yolol::ast::Expression::Divide(Box::new(handle_expr(&x)?), Box::new(handle_expr(&y)?)),
-                Expression::Exponent(x, y) => yolol::ast::Expression::Exponent(Box::new(handle_expr(&x)?), Box::new(handle_expr(&y)?)),
-                Expression::Modulus(x, y) => yolol::ast::Expression::Modulus(Box::new(handle_expr(&x)?), Box::new(handle_expr(&y)?)),
-                Expression::And(x, y) => yolol::ast::Expression::And(Box::new(handle_expr(&x)?), Box::new(handle_expr(&y)?)),
-                Expression::Or(x, y) => yolol::ast::Expression::Or(Box::new(handle_expr(&x)?), Box::new(handle_expr(&y)?)),
+                Expression::Add(ref x, ref y) => yolol::ast::Expression::Add(Box::new(handle_expr(x, types)?), Box::new(handle_expr(y, types)?)),
+                Expression::Subtract(ref x, ref y) => yolol::ast::Expression::Subtract(Box::new(handle_expr(x, types)?), Box::new(handle_expr(y, types)?)),
+                Expression::Multiply(ref x, ref y) => yolol::ast::Expression::Multiply(Box::new(handle_expr(x, types)?), Box::new(handle_expr(y, types)?)),
+                Expression::Divide(ref x, ref y) => yolol::ast::Expression::Divide(Box::new(handle_expr(x, types)?), Box::new(handle_expr(y, types)?)),
+                Expression::Exponent(ref x, ref y) => yolol::ast::Expression::Exponent(Box::new(handle_expr(x, types)?), Box::new(handle_expr(y, types)?)),
+                Expression::Modulus(ref x, ref y) => yolol::ast::Expression::Modulus(Box::new(handle_expr(x, types)?), Box::new(handle_expr(y, types)?)),
+                Expression::And(ref x, ref y) => yolol::ast::Expression::And(Box::new(handle_expr(x, types)?), Box::new(handle_expr(y, types)?)),
+                Expression::Or(ref x, ref y) => yolol::ast::Expression::Or(Box::new(handle_expr(x, types)?), Box::new(handle_expr(y, types)?)),
 
-                Expression::GreaterThan(x, y) => yolol::ast::Expression::GreaterThan(Box::new(handle_expr(&x)?), Box::new(handle_expr(&y)?)),
-                Expression::GreaterThanOrEq(x, y) => yolol::ast::Expression::GreaterThanOrEq(Box::new(handle_expr(&x)?), Box::new(handle_expr(&y)?)),
-                Expression::LessThan(x, y) => yolol::ast::Expression::LessThan(Box::new(handle_expr(&x)?), Box::new(handle_expr(&y)?)),
-                Expression::LessThanOrEq(x, y) => yolol::ast::Expression::LessThanOrEq(Box::new(handle_expr(&x)?), Box::new(handle_expr(&y)?)),
-                Expression::Equals(x, y) => yolol::ast::Expression::Equal(Box::new(handle_expr(&x)?), Box::new(handle_expr(&y)?)),
-                Expression::NotEquals(x, y) => yolol::ast::Expression::NotEqual(Box::new(handle_expr(&x)?), Box::new(handle_expr(&y)?)),
+                Expression::GreaterThan(ref x, ref y) => yolol::ast::Expression::GreaterThan(Box::new(handle_expr(x, types)?), Box::new(handle_expr(y, types)?)),
+                Expression::GreaterThanOrEq(ref x, ref y) => yolol::ast::Expression::GreaterThanOrEq(Box::new(handle_expr(x, types)?), Box::new(handle_expr(y, types)?)),
+                Expression::LessThan(ref x, ref y) => yolol::ast::Expression::LessThan(Box::new(handle_expr(x, types)?), Box::new(handle_expr(y, types)?)),
+                Expression::LessThanOrEq(ref x, ref y) => yolol::ast::Expression::LessThanOrEq(Box::new(handle_expr(x, types)?), Box::new(handle_expr(y, types)?)),
+                Expression::Equals(ref x, ref y) => yolol::ast::Expression::Equal(Box::new(handle_expr(x, types)?), Box::new(handle_expr(y, types)?)),
+                Expression::NotEquals(ref x, ref y) => yolol::ast::Expression::NotEqual(Box::new(handle_expr(x, types)?), Box::new(handle_expr(y, types)?)),
 
                 Expression::FieldAccess(x) => yolol::ast::Expression::VariableAccess(yolol::ast::Identifier { name: canonicalise_field_path(x), external: false }),
                 Expression::ExternalFieldAccess(x) => yolol::ast::Expression::VariableAccess(yolol::ast::Identifier { name: x.clone(), external: true }),
 
-                _ => return Err(CompilerError::CompilerStageNotImplemented(format!("Unhandled expr: `{:?}`", expr)))
+                Expression::Call(name, args) => panic!("Call {:?} with {:?}", name, args),
+
+                Expression::Is(ref expr, ref typename) => {
+                    if type_check_assignment(&typename.to_type(), &infer_expr_type(expr, types)?).is_ok() {
+                        yolol::ast::Expression::ConstantNumber(YololNumber::one())
+                    } else {
+                        yolol::ast::Expression::ConstantNumber(YololNumber::zero())
+                    }
+                },
+                
+                Expression::PostIncrement(name) => yolol::ast::Expression::PostDecrement(yolol::ast::Identifier { name: canonicalise_field_path(name), external: false }),
+                Expression::PostDecrement(name) => yolol::ast::Expression::PostDecrement(yolol::ast::Identifier { name: canonicalise_field_path(name), external: false }),
+                Expression::PreIncrement(name) => yolol::ast::Expression::PreIncrement(yolol::ast::Identifier { name: canonicalise_field_path(name), external: false }),
+                Expression::PreDecrement(name) => yolol::ast::Expression::PreDecrement(yolol::ast::Identifier { name: canonicalise_field_path(name), external: false }),
+
+                Expression::Constructor(typename, Initialisers) => panic!("Constructor for type {:?}", typename),
             })
         }
     }

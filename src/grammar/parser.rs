@@ -1,4 +1,5 @@
 use super::ast::*;
+use yolol_number::prelude::*;
 
 // C parser grammar: https://github.com/vickenty/lang-c/blob/master/grammar.rustpeg
 
@@ -189,7 +190,7 @@ peg::parser!{
                 --
                 x:(@) __ "|" "|"? __ y:@ { Expression::Or(Box::new(x), Box::new(y)) }
                 --
-                x:(@) __ "is" __ y:identifier() { Expression::Is(Box::new(x), y) }
+                x:(@) __ "is" __ y:identifier() { Expression::Is(Box::new(x), TypeName { typename: y }) }
                 --
                 x:(@) __ "==" __ y:@ { Expression::Equals(Box::new(x), Box::new(y)) }
                 x:(@) __ "!=" __ y:@ { Expression::NotEquals(Box::new(x), Box::new(y)) }
@@ -211,10 +212,10 @@ peg::parser!{
                 "-" x:expression() { Expression::Negate(Box::new(x)) }
                 "!" x:expression() { Expression::Not(Box::new(x)) }
                 --
-                i:identifier() __ "++" { Expression::PostIncrement(i) }
-                i:identifier() __ "--" { Expression::PostDecrement(i) }
-                "++" __ i:identifier() { Expression::PreIncrement(i) }
-                "--" __ i:identifier() { Expression::PreDecrement(i) }
+                i:field_access() __ "++" { Expression::PostIncrement(i) }
+                i:field_access() __ "--" { Expression::PostDecrement(i) }
+                "++" __ i:field_access() { Expression::PreIncrement(i) }
+                "--" __ i:field_access() { Expression::PreDecrement(i) }
                 --
                 t:identifier() __ "{" __ c:(constructor_field() ** ("," __)) __ ","? __ "}" { Expression::Constructor(TypeName { typename: t }, c) }
                 n:number() { Expression::ConstNumber(n) }
@@ -249,9 +250,9 @@ peg::parser!{
             = "\"" s:$((!"\"" [_])*) "\""
             { s.to_string() }
 
-        rule number() -> String
+        rule number() -> YololNumber
             = p:$("-"? ['0'..='9']+ ("." ['0'..='9']+)?)
-            { p.to_string() }
+            { p.to_string().parse::<YololNumber>().expect("Yolol_Number") }
 
 
 

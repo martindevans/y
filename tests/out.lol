@@ -5,39 +5,45 @@ YololStatementBlocks {
             [
                 Assignment(
                     Identifier {
-                        name: "a",
+                        name: "i",
                         external: false,
                     },
                     ConstantNumber(
-                        "7",
-                    ),
-                ),
-                Assignment(
-                    Identifier {
-                        name: "b",
-                        external: false,
-                    },
-                    ConstantNumber(
-                        "10",
-                    ),
-                ),
-                Assignment(
-                    Identifier {
-                        name: "out",
-                        external: true,
-                    },
-                    Add(
-                        VariableAccess(
-                            Identifier {
-                                name: "a",
-                                external: false,
-                            },
+                        YololNumber(
+                            100,
                         ),
-                        VariableAccess(
-                            Identifier {
-                                name: "b",
-                                external: false,
-                            },
+                    ),
+                ),
+                Assignment(
+                    Identifier {
+                        name: "d",
+                        external: false,
+                    },
+                    ConstantNumber(
+                        YololNumber(
+                            10,
+                        ),
+                    ),
+                ),
+                Assignment(
+                    Identifier {
+                        name: "x",
+                        external: false,
+                    },
+                    ConstantNumber(
+                        YololNumber(
+                            1000,
+                        ),
+                    ),
+                ),
+                Assignment(
+                    Identifier {
+                        name: "y",
+                        external: false,
+                    },
+                    ConstantNumber(
+                        YololNumber(
+                            0,
                         ),
                     ),
                 ),
@@ -45,8 +51,17 @@ YololStatementBlocks {
         ),
     ],
     types: {
-        "b": Num,
-        "a": Num,
+        "x": Bool,
+        "y": Bool,
+        "d": Num,
+        "i": Num,
+        "p": Num,
     },
-    consts: {},
+    consts: {
+        "p": ConstantNumber(
+            YololNumber(
+                1000,
+            ),
+        ),
+    },
 }
