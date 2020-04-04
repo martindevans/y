@@ -109,6 +109,14 @@ impl InitialStatementBlocks {
                     ])
                 }
 
+                InnerStatement::DeclareAssign(field, Expression::Constructor(args)) => {
+                    panic!("constructor declaration initialiser");
+                }
+
+                InnerStatement::Assign(field, Expression::Constructor(args)) => {
+                    panic!("constructor assignment initialiser");
+                }
+
                 InnerStatement::Assign(path, value) => {
                     
                     let name = canonicalise_field_path(&path);
@@ -163,7 +171,7 @@ impl InitialStatementBlocks {
 
                 InnerStatement::ExternalAssign(field, value) => {
 
-                    //todo: type check externals?
+                    // todo: Typecheck Externals according to device map.
 
                     let r = yolol::ast::Statement::Assignment(
                         yolol::ast::Identifier {
@@ -176,7 +184,7 @@ impl InitialStatementBlocks {
                     return Ok(vec![r]);
                 },
 
-                InnerStatement::Return(value) => panic!("todo:Return"),
+                InnerStatement::Return(_) => panic!("Encountered return statement in yolol_blocks pass (b2e2df60-218e-4f92-a9ac-603bad83ff0d)"),
                 
                 InnerStatement::Goto(name) => {
                     Ok(vec![
@@ -185,7 +193,7 @@ impl InitialStatementBlocks {
                                 yolol::ast::Identifier {
                                     external: false,
 
-                                    // todo: when lines are assigned in a later stage create this variable
+                                    // todo: A later stage will create lines, it'll need to assign these `goto_layout_label_foo` constants to the right line number
                                     name: format!("goto_layout_label_{}", name)
                                 }
                             )
@@ -239,13 +247,14 @@ impl InitialStatementBlocks {
                         yolol::ast::Expression::ConstantNumber(YololNumber::zero())
                     }
                 },
+                Expression::TypeOf(ref expr) => yolol::ast::Expression::ConstantString(format!("{}", infer_expr_type(expr, types)?)),
                 
                 Expression::PostIncrement(name) => yolol::ast::Expression::PostDecrement(yolol::ast::Identifier { name: canonicalise_field_path(name), external: false }),
                 Expression::PostDecrement(name) => yolol::ast::Expression::PostDecrement(yolol::ast::Identifier { name: canonicalise_field_path(name), external: false }),
                 Expression::PreIncrement(name) => yolol::ast::Expression::PreIncrement(yolol::ast::Identifier { name: canonicalise_field_path(name), external: false }),
                 Expression::PreDecrement(name) => yolol::ast::Expression::PreDecrement(yolol::ast::Identifier { name: canonicalise_field_path(name), external: false }),
 
-                Expression::Constructor(typename, Initialisers) => panic!("Constructor for type {:?}", typename),
+                Expression::Constructor(_) => return Err(CompilerError::ConstructorExpression()),
             })
         }
     }

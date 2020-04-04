@@ -47,6 +47,7 @@ fn main() {
         Err(CompilerError::FieldTypeNotKnown(path)) => println!("{}", format!("Cannot find type for field {:?}", path).red()),
         Err(CompilerError::ExpressionTypeInferenceFailed(expr)) => println!("{}", format!("Cannot infer type for expression {:?}", expr).red()),
         Err(CompilerError::StaticTypeError(cause, expr)) => println!("{}", format!("Static error caused by {} in expression `{:?}`", cause, expr).red()),
+        Err(CompilerError::ConstructorExpression()) => println!("{}", format!("Must assign constructor expression to a field").red()),
     }
 }
 

@@ -176,6 +176,7 @@ pub enum Expression {
     Call(String, Vec<Expression>),
 
     Is(Box<Expression>, TypeName),
+    TypeOf(Box<Expression>),
     Add(Box<Expression>, Box<Expression>),
     Subtract(Box<Expression>, Box<Expression>),
     Multiply(Box<Expression>, Box<Expression>),
@@ -198,5 +199,5 @@ pub enum Expression {
     PreIncrement(Vec<String>),
     PreDecrement(Vec<String>),
 
-    Constructor(TypeName, Vec<(String, Expression)>),
+    Constructor(Vec<(String, Expression)>),
 }

@@ -16,5 +16,6 @@ pub enum CompilerError {
     IncorrectCallParameterCount(String, usize, usize),
     FieldTypeNotKnown(Vec<String>),
     ExpressionTypeInferenceFailed(Expression),
-    StaticTypeError(String, Expression)
+    StaticTypeError(String, Expression),
+    ConstructorExpression()
 }

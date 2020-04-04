@@ -211,13 +211,14 @@ peg::parser!{
                 --
                 "-" x:expression() { Expression::Negate(Box::new(x)) }
                 "!" x:expression() { Expression::Not(Box::new(x)) }
+                "typeof" __ "(" __ x:expression() __ ")" { Expression::TypeOf(Box::new(x)) }
                 --
                 i:field_access() __ "++" { Expression::PostIncrement(i) }
                 i:field_access() __ "--" { Expression::PostDecrement(i) }
                 "++" __ i:field_access() { Expression::PreIncrement(i) }
                 "--" __ i:field_access() { Expression::PreDecrement(i) }
                 --
-                t:identifier() __ "{" __ c:(constructor_field() ** ("," __)) __ ","? __ "}" { Expression::Constructor(TypeName { typename: t }, c) }
+                "{" __ c:(constructor_field() ** ("," __)) __ ","? __ "}" { Expression::Constructor(c) }
                 n:number() { Expression::ConstNumber(n) }
                 s:string() { Expression::ConstString(s) }
                 ":" i:identifier() { Expression::ExternalFieldAccess(i) }

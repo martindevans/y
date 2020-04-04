@@ -79,8 +79,6 @@ pub fn infer_expr_type(expr: &Expression, fields: &HashMap<String, Type>) -> Res
         Expression::ConstNumber(_) => Type::Num,
         Expression::ConstString(_) => Type::Str,
 
-        Expression::Constructor(t, _) => Type::Other(t.clone()),
-
         Expression::Bracket(x) => infer_expr_type(x, fields)?,
         Expression::Not(_) => Type::Bool,
 
