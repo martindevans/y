@@ -1,5 +1,7 @@
 use std::path::PathBuf;
+
 use crate::compiler::Type;
+use crate::grammar::ast::Expression;
 
 pub enum CompilerError {
     IO(PathBuf, std::io::Error),
@@ -10,4 +12,9 @@ pub enum CompilerError {
     DuplicateFieldDeclaration(String),
     AssigningUndeclaredField(Vec<String>),
     TypeCheckFailed(Type, Type),
+    CallableNotFound(String),
+    IncorrectCallParameterCount(String, usize, usize),
+    FieldTypeNotKnown(Vec<String>),
+    ExpressionTypeInferenceFailed(Expression),
+    StaticTypeError(String, Expression)
 }

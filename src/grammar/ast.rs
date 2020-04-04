@@ -60,44 +60,44 @@ pub struct Import {
     pub namespace: Option<String>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Constant {
     pub field: FieldDefinition,
     pub value: Expression
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EnumDefinition {
     pub name: String,
     pub base: String,
     pub items: Vec<EnumItemDefinition>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct EnumItemDefinition {
     pub name: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StructDefinition {
     pub name: String,
     pub fields: Vec<FieldDefinition>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RangeDefinition {
     pub name: String,
     pub base: String,
     pub expression: Expression,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CallType {
     Proc,
     Macro
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CallableDefinition {
     pub name: String,
     pub call_type: CallType,
@@ -107,35 +107,35 @@ pub struct CallableDefinition {
     pub attributes: Vec<Attribute>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct ParameterDefinition {
     pub field: FieldDefinition,
     pub copy: bool
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Main {
     pub statements: Vec<OuterStatement>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct FieldDefinition {
     pub name: String,
     pub typename: TypeName
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct TypeName {
     pub typename: String
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Attribute {
     pub name: String,
     pub parameters: Vec<Expression>
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum OuterStatement {
     //Loop(Vec<OuterStatement>),
     Line(Vec<InnerStatement>, Option<String>),
@@ -143,7 +143,7 @@ pub enum OuterStatement {
     Label(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum InnerStatement {
     CompilePanic(String, usize),
 
@@ -161,7 +161,7 @@ pub enum InnerStatement {
     Goto(String)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expression {
     CompilePanic(String, usize),
 
@@ -196,5 +196,5 @@ pub enum Expression {
     PreIncrement(String),
     PreDecrement(String),
 
-    Constructor(Vec<(String, Expression)>),
+    Constructor(TypeName, Vec<(String, Expression)>),
 }

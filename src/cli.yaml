@@ -25,3 +25,21 @@ args:
       long: devices
       help: Input a file which specifies the network layout
       takes_value: true
+
+  - config:
+      short: c
+      long: config
+      help: Specify which config this build is using
+      takes_value: true
+
+  - line_length:
+      long: line_length
+      help: Specify the max line length
+      takes_value: true
+      default_value: "70"
+
+  - line_count:
+      long: line_count
+      help: Specify the maximum number of lines
+      takes_value: true
+      default_value: "20"

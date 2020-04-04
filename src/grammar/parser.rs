@@ -216,7 +216,7 @@ peg::parser!{
                 "++" __ i:identifier() { Expression::PreIncrement(i) }
                 "--" __ i:identifier() { Expression::PreDecrement(i) }
                 --
-                "{" __ c:(constructor_field() ** ("," __)) __ ","? __ "}" { Expression::Constructor(c) }
+                t:identifier() __ "{" __ c:(constructor_field() ** ("," __)) __ ","? __ "}" { Expression::Constructor(TypeName { typename: t }, c) }
                 n:number() { Expression::ConstNumber(n) }
                 s:string() { Expression::ConstString(s) }
                 ":" i:identifier() { Expression::ExternalFieldAccess(i) }

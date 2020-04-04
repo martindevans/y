@@ -16,6 +16,7 @@ mod error;
 mod yolol;
 
 use error::CompilerError;
+use compiler::BuildConfig;
 
 fn main() {
 
@@ -29,8 +30,9 @@ fn main() {
 
     let input = PathBuf::from(matches.value_of("input").unwrap());
     let output = PathBuf::from(matches.value_of("output").unwrap());
+    let config = BuildConfig::from_matches(&matches);
 
-    match compile(&input, &output) {
+    match compile(&input, &output, &config) {
         Ok(()) => {},
         Err(CompilerError::IO(path, io)) => io_err_handler(&path, io),
         Err(CompilerError::Parse(path, code, err)) => parser_error_handler(&path, &code, err),
@@ -40,10 +42,15 @@ fn main() {
         Err(CompilerError::AssigningUndeclaredField(path)) => println!("{}", format!("\n# Assigning to nonexistent field `{:?}`", path).red()),
         Err(CompilerError::CompilerStageNotImplemented(msg)) => println!("{}", format!("\n# Not Implemented: `{}`", msg).red()),
         Err(CompilerError::TypeCheckFailed(a, b)) => println!("{}", format!("\n# Cannot Assign `{}` to `{}`", b, a).red()),
+        Err(CompilerError::CallableNotFound(name)) => println!("{}", format!("\n# Cannot find callable `{}`", name).red()),
+        Err(CompilerError::IncorrectCallParameterCount(name, expected, actual)) => println!("{}", format!("\n# Incorrect number of parameters passed to `{}` (expected {}, got {})", name, expected, actual).red()),
+        Err(CompilerError::FieldTypeNotKnown(path)) => println!("{}", format!("Cannot find type for field {:?}", path).red()),
+        Err(CompilerError::ExpressionTypeInferenceFailed(expr)) => println!("{}", format!("Cannot infer type for expression {:?}", expr).red()),
+        Err(CompilerError::StaticTypeError(cause, expr)) => println!("{}", format!("Static error caused by {} in expression `{:?}`", cause, expr).red()),
     }
 }
 
-fn compile(input: &PathBuf, output: &PathBuf) -> Result<(), CompilerError> {
+fn compile(input: &PathBuf, output: &PathBuf, config: &BuildConfig) -> Result<(), CompilerError> {
 
     println!("{} `{}`", "#".bright_blue(), input.display());
     let now = Instant::now();
@@ -79,9 +86,13 @@ fn compile(input: &PathBuf, output: &PathBuf) -> Result<(), CompilerError> {
 
     let blocks = do_with_timing("Build Blocks", || ast.build_blocks())?;
     println!("| | {} blocks", blocks.blocks.len());
-    let blocks = do_with_timing("Convert Blocks", || blocks.covert_yolol_blocks())?;
+    let blocks = do_with_timing("Copy Macros Inline", || blocks.inline_macros(config))?;
+    let blocks = do_with_timing("Blocks To Yolol AST", || blocks.covert_yolol_blocks())?;
     println!("| | {} type mappings", blocks.types.len());
     println!("| | {} const expr", blocks.consts.len());
+
+    //todo: split blocks into smaller blocks (which can fit on a single line)
+    //todo: layout lines in order
 
     fs::write(output, format!("{:#?}", blocks)).map_err(|x| CompilerError::IO(output.clone(), x))?;
 

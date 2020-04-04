@@ -5,58 +5,48 @@ YololStatementBlocks {
             [
                 Assignment(
                     Identifier {
-                        name: "i",
+                        name: "a",
                         external: false,
                     },
                     ConstantNumber(
-                        "0.1",
+                        "7",
                     ),
                 ),
                 Assignment(
                     Identifier {
-                        name: "d",
+                        name: "b",
                         external: false,
                     },
                     ConstantNumber(
-                        "0.01",
+                        "10",
+                    ),
+                ),
+                Assignment(
+                    Identifier {
+                        name: "out",
+                        external: true,
+                    },
+                    Add(
+                        VariableAccess(
+                            Identifier {
+                                name: "a",
+                                external: false,
+                            },
+                        ),
+                        VariableAccess(
+                            Identifier {
+                                name: "b",
+                                external: false,
+                            },
+                        ),
                     ),
                 ),
             ],
-        ),
-        Line(
-            Some(
-                "loop_start",
-            ),
-            [
-                Goto(
-                    VariableAccess(
-                        Identifier {
-                            name: "goto_layout_label_loop_start",
-                            external: false,
-                        },
-                    ),
-                ),
-            ],
-        ),
-        Statements(
-            None,
-            [],
         ),
     ],
     types: {
-        "i": TypeName {
-            typename: "number",
-        },
-        "d": TypeName {
-            typename: "number",
-        },
-        "p": TypeName {
-            typename: "number",
-        },
+        "b": Num,
+        "a": Num,
     },
-    consts: {
-        "p": ConstantNumber(
-            "1",
-        ),
-    },
+    consts: {},
 }

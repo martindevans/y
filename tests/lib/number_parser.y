@@ -16,17 +16,16 @@ def macro parse_base16_char(input: string, output: number, counter: number) {
 }
 
 main {
-    panic("contents of `main` block remain unimplemented");
-    /* line(init) {
-        o = 0;
-        i = "8237897"
-        c = 0;
-    }
+    line(init) {
+        const i:string = "8237897";
+        var o:number = 0;
+        var c:number = 0;
+    };
     line(parse) {
         parse_base10_char(i, o, c);
         goto parse;
-    }
+    };
     line(check) {
         :assert = 8237897 == o;
-    } */
+    };
 }

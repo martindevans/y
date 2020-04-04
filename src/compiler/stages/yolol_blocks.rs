@@ -1,16 +1,13 @@
 use std::collections::HashMap;
 
-use crate::grammar::ast::{ InnerStatement, OuterStatement, TypeName, Expression, FieldDefinition };
+use crate::grammar::ast::{ InnerStatement, OuterStatement, Expression };
 use crate::error::{ CompilerError };
 use crate::yolol;
-use crate::compiler::typecheck::{ Type, expr_type, type_check };
+use crate::compiler::typecheck::{ Type, infer_expr_type, type_check_assignment };
+use crate::compiler::calls::{ CallType };
 use super::initial_blocks::{ InitialStatementBlocks, Block };
+use super::super::fields::{ canonicalise_field_path };
 
-#[derive(Debug)]
-enum CallType {
-    Macro,
-    Proc,
-}
 
 #[derive(Debug)]
 pub enum YololBlock {
@@ -25,7 +22,7 @@ pub enum YololBlock {
 pub struct YololStatementBlocks {
     pub blocks: Vec<YololBlock>,
 
-    pub types: HashMap<String, TypeName>,
+    pub types: HashMap<String, Type>,
     pub consts: HashMap<String, yolol::ast::Expression>
 }
 
@@ -46,14 +43,14 @@ impl InitialStatementBlocks {
             consts: consts
         });
 
-        fn handle_block(b: &Block, types: &mut HashMap<String, TypeName>, consts: &mut HashMap<String, yolol::ast::Expression>) -> Result<YololBlock, CompilerError> {
+        fn handle_block(b: &Block, types: &mut HashMap<String, Type>, consts: &mut HashMap<String, yolol::ast::Expression>) -> Result<YololBlock, CompilerError> {
             match b {
                 Block::Statements(name, stmts) => Ok(YololBlock::Statements(name.clone(), handle_outer_stmts(stmts, types, consts)?)),
                 Block::Line(label, stmts) => Ok(YololBlock::Line(label.clone(), handle_inner_stmts(stmts, types, consts)?))
             }
         }
 
-        fn handle_outer_stmts(stmts: &Vec::<OuterStatement>, types: &mut HashMap<String, TypeName>, consts: &mut HashMap<String, yolol::ast::Expression>) -> Result<Vec<yolol::ast::Statement>, CompilerError> {
+        fn handle_outer_stmts(stmts: &Vec::<OuterStatement>, types: &mut HashMap<String, Type>, consts: &mut HashMap<String, yolol::ast::Expression>) -> Result<Vec<yolol::ast::Statement>, CompilerError> {
             Ok(stmts
                 .iter()
                 .map(|x| handle_outer_stmt(x, types, consts))
@@ -64,7 +61,7 @@ impl InitialStatementBlocks {
             )
         }
 
-        fn handle_outer_stmt(inner: &OuterStatement, types: &mut HashMap<String, TypeName>, consts: &mut HashMap<String, yolol::ast::Expression>) -> Result<Vec<yolol::ast::Statement>, CompilerError> {
+        fn handle_outer_stmt(inner: &OuterStatement, types: &mut HashMap<String, Type>, consts: &mut HashMap<String, yolol::ast::Expression>) -> Result<Vec<yolol::ast::Statement>, CompilerError> {
             match inner {
                 OuterStatement::Inner(inner) => handle_inner_stmt(&inner, types, consts),
 
@@ -76,7 +73,7 @@ impl InitialStatementBlocks {
             }
         }
 
-        fn handle_inner_stmts(stmts: &Vec::<InnerStatement>, types: &mut HashMap<String, TypeName>, consts: &mut HashMap<String, yolol::ast::Expression>) -> Result<Vec<yolol::ast::Statement>, CompilerError> {
+        fn handle_inner_stmts(stmts: &Vec::<InnerStatement>, types: &mut HashMap<String, Type>, consts: &mut HashMap<String, yolol::ast::Expression>) -> Result<Vec<yolol::ast::Statement>, CompilerError> {
             Ok(stmts
                 .iter()
                 .map(|x| handle_inner_stmt(x, types, consts))
@@ -87,14 +84,14 @@ impl InitialStatementBlocks {
             )
         }
 
-        fn handle_inner_stmt(inner: &InnerStatement, types: &mut HashMap<String, TypeName>, consts: &mut HashMap<String, yolol::ast::Expression>) -> Result<Vec<yolol::ast::Statement>, CompilerError> {
+        fn handle_inner_stmt(inner: &InnerStatement, types: &mut HashMap<String, Type>, consts: &mut HashMap<String, yolol::ast::Expression>) -> Result<Vec<yolol::ast::Statement>, CompilerError> {
             match inner {
                 InnerStatement::CompilePanic(msg, pos) => Err(CompilerError::ExplicitPanic(msg.to_string(), *pos)),
 
                 InnerStatement::Emit(code) => Err(CompilerError::CompilerStageNotImplemented(format!("Direct emit yolol code: `{}`", code))),
 
                 InnerStatement::Call(name, args) => {
-                    match find_call(name) {
+                    match find_call(name)? {
                         CallType::Macro => panic!("todo: macro call"),
                         CallType::Proc => panic!("todo: proc call"),
                     }
@@ -112,11 +109,11 @@ impl InitialStatementBlocks {
 
                 InnerStatement::Assign(path, value) => {
                     
-                    let name = convert_field_path(&path);
+                    let name = canonicalise_field_path(&path);
 
                     // Type check expression and field type are compatible
                     match types.get(&name) {
-                        Some(t) => type_check(&Type::Other(t.typename.clone()), &expr_type(&value)?),
+                        Some(t) => type_check_assignment(&t, &infer_expr_type(&value, types)?),
                         None => Err(CompilerError::AssigningUndeclaredField(path.clone())),
                     }?;
 
@@ -136,8 +133,8 @@ impl InitialStatementBlocks {
                         return Err(CompilerError::DuplicateFieldDeclaration(field.name.clone()));
                     }
     
-                    type_check(&Type::Other(field.typename.typename.clone()), &expr_type(&value)?)?;
-                    types.insert(field.name.clone(), field.typename.clone());
+                    type_check_assignment(&Type::Other(field.typename.clone()), &infer_expr_type(&value, types)?)?;
+                    types.insert(field.name.clone(), field.typename.to_type());
     
                     let r = yolol::ast::Statement::Assignment(
                         yolol::ast::Identifier {
@@ -155,8 +152,8 @@ impl InitialStatementBlocks {
                         return Err(CompilerError::DuplicateFieldDeclaration(field.name.clone()));
                     }
 
-                    type_check(&Type::Other(field.typename.typename.clone()), &expr_type(&value)?)?;
-                    types.insert(field.name.clone(), field.typename.clone());
+                    type_check_assignment(&Type::Other(field.typename.clone()), &infer_expr_type(&value, types)?)?;
+                    types.insert(field.name.clone(), field.typename.to_type());
                     consts.insert(field.name.clone(), handle_expr(value)?);
 
                     return Ok(Vec::new());
@@ -196,8 +193,8 @@ impl InitialStatementBlocks {
             }
         }
 
-        fn find_call(name: &str) -> CallType {
-            panic!("find call");
+        fn find_call(name: &str) -> Result<CallType, CompilerError> {
+            return Err(CompilerError::CompilerStageNotImplemented(format!("Find Call `{}`", name)));
         }
 
         fn handle_expr(expr: &Expression) -> Result<yolol::ast::Expression, CompilerError> {
@@ -225,13 +222,11 @@ impl InitialStatementBlocks {
                 Expression::Equals(x, y) => yolol::ast::Expression::Equal(Box::new(handle_expr(&x)?), Box::new(handle_expr(&y)?)),
                 Expression::NotEquals(x, y) => yolol::ast::Expression::NotEqual(Box::new(handle_expr(&x)?), Box::new(handle_expr(&y)?)),
 
+                Expression::FieldAccess(x) => yolol::ast::Expression::VariableAccess(yolol::ast::Identifier { name: canonicalise_field_path(x), external: false }),
+                Expression::ExternalFieldAccess(x) => yolol::ast::Expression::VariableAccess(yolol::ast::Identifier { name: x.clone(), external: true }),
+
                 _ => return Err(CompilerError::CompilerStageNotImplemented(format!("Unhandled expr: `{:?}`", expr)))
             })
-        }
-        
-
-        fn convert_field_path(path: &Vec<String>) -> String {
-            return path.join("_");
         }
     }
 }
