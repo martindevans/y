@@ -27,7 +27,13 @@ impl std::fmt::Display for Type {
 
 impl Type {
     pub fn to_typename(&self) -> TypeName {
-        panic!();
+        match self {
+            Type::Any => TypeName { typename: "any".to_string() },
+            Type::Num => TypeName { typename: "number".to_string() },
+            Type::Bool => TypeName { typename: "bool".to_string() },
+            Type::Str => TypeName { typename: "string".to_string() },
+            Type::Other(a) => a.clone(),
+        }
     }
 
     pub fn canonicalise(&self) -> Type {

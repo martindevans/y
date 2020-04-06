@@ -23,6 +23,7 @@ impl InitialStatementBlocks {
         return Ok(InitialStatementBlocks {
             blocks: result?,
             callables: callables,
+            structs: self.structs,
         });
 
         fn handle_block(b: Block, callables: &HashMap<String, CallableDefinition>, types: &mut HashMap<String, Type>, config: &BuildConfig) -> Result<Block, CompilerError> {
@@ -47,10 +48,10 @@ impl InitialStatementBlocks {
             match outer {
                 OuterStatement::Inner(inner) => Ok(handle_inner_stmt(inner, callables, types, config)?.into_iter().map(|x| OuterStatement::Inner(x)).collect()),
 
-                // There should be no `Label` statements here, they've been promoted into named blocks by the previous pass
+                // There should be no `Label` statements here, they've been promoted into named blocks by the initial_blocks pass
                 OuterStatement::Label(name) => panic!("Encountered label `{}` as an outer statement (1b566df9-0d58-4bd8-aade-89a2e5a4397b)", name),
 
-                // There should be no `Line` statements here, they've been separated into Line blocks by the previous pass
+                // There should be no `Line` statements here, they've been separated into Line blocks by the initial_blocks pass
                 OuterStatement::Line(_, name) => panic!("Encountered line `{:?}` as an outer statement (bf0389c9-db37-4019-99e9-62747d842146)", name),
             }
         }

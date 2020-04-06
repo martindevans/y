@@ -87,6 +87,7 @@ impl InitialStatementBlocks {
         }
 
         fn handle_inner_stmt(inner: &InnerStatement, types: &mut HashMap<String, Type>, consts: &mut HashMap<String, yolol::ast::Expression>) -> Result<Vec<yolol::ast::Statement>, CompilerError> {
+
             match inner {
                 InnerStatement::CompilePanic(msg, pos) => Err(CompilerError::ExplicitPanic(msg.to_string(), *pos)),
 
@@ -107,14 +108,6 @@ impl InitialStatementBlocks {
                             Box::new(yolol::ast::StatementList { statements: handle_inner_stmts(fail, types, consts)? })
                         )
                     ])
-                }
-
-                InnerStatement::DeclareAssign(field, Expression::Constructor(args)) => {
-                    panic!("constructor declaration initialiser");
-                }
-
-                InnerStatement::Assign(field, Expression::Constructor(args)) => {
-                    panic!("constructor assignment initialiser");
                 }
 
                 InnerStatement::Assign(path, value) => {
@@ -184,6 +177,7 @@ impl InitialStatementBlocks {
                     return Ok(vec![r]);
                 },
 
+                // Return statements should have all been written out of existence in the macro inlining pass
                 InnerStatement::Return(_) => panic!("Encountered return statement in yolol_blocks pass (b2e2df60-218e-4f92-a9ac-603bad83ff0d)"),
                 
                 InnerStatement::Goto(name) => {
@@ -254,7 +248,8 @@ impl InitialStatementBlocks {
                 Expression::PreIncrement(name) => yolol::ast::Expression::PreIncrement(yolol::ast::Identifier { name: canonicalise_field_path(name), external: false }),
                 Expression::PreDecrement(name) => yolol::ast::Expression::PreDecrement(yolol::ast::Identifier { name: canonicalise_field_path(name), external: false }),
 
-                Expression::Constructor(_) => return Err(CompilerError::ConstructorExpression()),
+                // There should be no `Constructor` expressions here, they've been replaced with simple variables in the materialise_structs pass
+                Expression::Constructor(ctor) => panic!("Encountered constructor expression `{:?}` (e4147676-1a10-4cf1-8b4f-eb7b11044000)", ctor),
             })
         }
     }

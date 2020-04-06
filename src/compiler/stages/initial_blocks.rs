@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
-use crate::grammar::ast::{ Program, Main, InnerStatement, OuterStatement, CallableDefinition };
+use crate::grammar::ast::{ Program, Main, InnerStatement, OuterStatement, CallableDefinition, StructDefinition };
 use crate::error::{ CompilerError };
+use super::super::build_config::BuildConfig;
 
 #[derive(Debug)]
 pub enum Block {
@@ -17,10 +18,11 @@ pub struct InitialStatementBlocks {
     pub blocks: Vec<Block>,
 
     pub callables: HashMap<String, CallableDefinition>,
+    pub structs: HashMap<String, StructDefinition>,
 }
 
 impl Program {
-    pub fn build_blocks(self) -> Result<InitialStatementBlocks, CompilerError> {
+    pub fn build_blocks(self, config: &BuildConfig) -> Result<InitialStatementBlocks, CompilerError> {
 
         fn extract_main(main: Main) -> Vec<Block> {
             let mut result: Vec<Block> = Vec::new();
@@ -55,7 +57,8 @@ impl Program {
 
         return Ok(InitialStatementBlocks {
             blocks: extract_main(self.main.ok_or(CompilerError::NoMainBlock)?),
-            callables: extract_calls(self.callables)
+            callables: self.callables.iter().map(|c| (c.name.clone(), c.clone())).collect(),
+            structs: self.structs.iter().map(|c| (c.name.clone(), c.clone())).collect(),
         });
     }
 }

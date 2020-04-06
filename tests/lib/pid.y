@@ -34,6 +34,11 @@ def macro pid_update(p:number, i:number, d:number, target: number, measurement: 
 }
 
 main {
+
+    // Initialise output to zero for safety
+    :output = 0;
+
+    // Initialise PID constants and state
     var controller:pid = {
         constants: {
             p: 1,
@@ -46,14 +51,9 @@ main {
             integrated_error: 0
         }
     };
-    const p:number = 1;
-    var i:number = 0.1;
-    var d:number = 0.01;
-
-    :output = 0;
 
     line(loop_start) {
-        :output = pid_update(p, i, d, :target, :input);
+        :output = pid_update(pid, :target, :input);
         goto loop_start;
     };
 }

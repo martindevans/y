@@ -48,6 +48,7 @@ fn main() {
         Err(CompilerError::ExpressionTypeInferenceFailed(expr)) => println!("{}", format!("Cannot infer type for expression {:?}", expr).red()),
         Err(CompilerError::StaticTypeError(cause, expr)) => println!("{}", format!("Static error caused by {} in expression `{:?}`", cause, expr).red()),
         Err(CompilerError::ConstructorExpression()) => println!("{}", format!("Must assign constructor expression to a field").red()),
+        Err(CompilerError::FieldConstructorAssignment(typ, initialisers)) => println!("{}", format!("Cannot assign a field of type `{}` from constructor expression `{:?}`", typ, initialisers).red()),
     }
 }
 
@@ -85,9 +86,10 @@ fn compile(input: &PathBuf, output: &PathBuf, config: &BuildConfig) -> Result<()
         return r;
     }
 
-    let blocks = do_with_timing("Build Blocks", || ast.build_blocks())?;
+    let blocks = do_with_timing("Build Blocks", || ast.build_blocks(config))?;
     println!("| | {} blocks", blocks.blocks.len());
     let blocks = do_with_timing("Copy Macros Inline", || blocks.inline_macros(config))?;
+    let blocks = do_with_timing("Materialise Struct Fields", || blocks.materialise_structs(config))?;
     let blocks = do_with_timing("Blocks To Yolol AST", || blocks.covert_yolol_blocks())?;
     println!("| | {} type mappings", blocks.types.len());
     println!("| | {} const expr", blocks.consts.len());

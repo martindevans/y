@@ -17,5 +17,6 @@ pub enum CompilerError {
     FieldTypeNotKnown(Vec<String>),
     ExpressionTypeInferenceFailed(Expression),
     StaticTypeError(String, Expression),
-    ConstructorExpression()
+    ConstructorExpression(),
+    FieldConstructorAssignment(Type, Vec<(String, Expression)>)
 }
