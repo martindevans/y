@@ -1,3 +1,7 @@
+## Deprecated!
+
+This version of the `y` compiler has been superseded by a [new version](https://github.com/martindevans/YLang).
+
 ## Y Language Compiler
 
 Y is a C like language which compiles into [Yolol](https://wiki.starbasegame.com/index.php/YOLOL). Y is intended to be a completely zero cost abstraction over Yolol, suitable as a _total replacement_ of the underlying language.
